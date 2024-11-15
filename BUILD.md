@@ -6,7 +6,7 @@ Please see the history of this file for instructions for older, unsupported vers
 library `libsysinternalsEBPF.so`, header `libsysinternalsEBPF.h`, plus
 resource files in `/opt/sysinternalsEBPF`. These can be installed from
 the
-[SysinternalsEBPF](https://github.com/Sysinternals/SysinternalsEBPF)
+[SysinternalsEBPF](https://github.com/Microsoft/SysinternalsEBPF)
 project or via the `sysinternalsebpf` DEB package from the
 _packages.microsoft.com_ repository (see [INSTALL.md](INSTALL.md)).
 If you installed SysinternalsEBPF via make install, you may need to add /usr/local/lib to the loader library path (LD_LIBRARY_PATH).
@@ -57,7 +57,7 @@ sudo apt -y install build-essential gcc g++ make cmake libelf-dev llvm clang lib
 ## Build
 ```
 cd
-git clone --recurse-submodules https://github.com/Sysinternals/SysmonForLinux.git
+git clone --recurse-submodules https://github.com/Microsoft/SysmonForLinux.git
 cd SysmonForLinux
 mkdir build
 cd build

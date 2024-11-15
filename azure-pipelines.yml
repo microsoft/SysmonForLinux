@@ -5,12 +5,12 @@ resources:
   - repository: Sysmon
     type: github
     endpoint: sysinternals
-    name: sysinternals/SysmonforLinux
+    name: Microsoft/SysmonforLinux
 
   - repository: SysinternalsEBPF
     type: github
     endpoint: sysinternals
-    name: sysinternals/SysinternalsEBPF
+    name: Microsoft/SysinternalsEBPF
 
 trigger:
     branches:
