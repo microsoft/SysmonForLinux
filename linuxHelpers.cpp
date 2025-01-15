@@ -900,7 +900,12 @@ void LinuxGetFileHash(uint32_t hashType, PTCHAR imagePath, char *stringBuffer, s
     sha1_ctx    = EVP_MD_CTX_new();
     md5_ctx     = EVP_MD_CTX_new();
     sha256_ctx  = EVP_MD_CTX_new();
-    if ( !sha1_ctx || !md5_ctx || !sha256_ctx ) return;
+    if ( !sha1_ctx || !md5_ctx || !sha256_ctx ) {
+        if(!sha1_ctx) EVP_MD_CTX_free(sha1_ctx);
+        if(!md5_ctx) EVP_MD_CTX_free(md5_ctx);
+        if(!sha256_ctx) EVP_MD_CTX_free(sha256_ctx);
+        return;
+    }
 
     EVP_DigestInit(sha1_ctx  , EVP_sha1());
     EVP_DigestInit(md5_ctx   , EVP_md5());
@@ -911,7 +916,12 @@ void LinuxGetFileHash(uint32_t hashType, PTCHAR imagePath, char *stringBuffer, s
     hashFlag[ALGO_SHA256] = (((hashType>>(ALGO_SHA256-1))&1) && (hashType & ALGO_MULTIPLE)) || (hashType == ALGO_SHA256);
 
     filePtr = fopen(imagePath, "rb");
-    if( !filePtr ) return;
+    if( !filePtr ) {
+        EVP_MD_CTX_free(sha1_ctx);
+        EVP_MD_CTX_free(md5_ctx);
+        EVP_MD_CTX_free(sha256_ctx);
+        return;
+    }
 
     // Read and hash image
     while((n = fread(tmpReadBuffer, 1, sizeof(tmpReadBuffer), filePtr))){
@@ -919,6 +929,9 @@ void LinuxGetFileHash(uint32_t hashType, PTCHAR imagePath, char *stringBuffer, s
         if( hashFlag[ALGO_SHA1] ){
             if (!EVP_DigestUpdate(sha1_ctx, tmpReadBuffer, n)){
                 fclose(filePtr);
+                EVP_MD_CTX_free(sha1_ctx);
+                EVP_MD_CTX_free(md5_ctx);
+                EVP_MD_CTX_free(sha256_ctx);
                 return;
             }
             if ( !(hashType & ALGO_MULTIPLE) ) continue;
@@ -927,6 +940,9 @@ void LinuxGetFileHash(uint32_t hashType, PTCHAR imagePath, char *stringBuffer, s
         if( hashFlag[ALGO_MD5] ){
             if (!EVP_DigestUpdate(md5_ctx, tmpReadBuffer, n)){
                 fclose(filePtr);
+                EVP_MD_CTX_free(sha1_ctx);
+                EVP_MD_CTX_free(md5_ctx);
+                EVP_MD_CTX_free(sha256_ctx);
                 return;
             }
             if ( !(hashType & ALGO_MULTIPLE) ) continue;
@@ -935,6 +951,9 @@ void LinuxGetFileHash(uint32_t hashType, PTCHAR imagePath, char *stringBuffer, s
         if( hashFlag[ALGO_SHA256] ){
             if (!EVP_DigestUpdate(sha256_ctx, tmpReadBuffer, n)){
                 fclose(filePtr);
+                EVP_MD_CTX_free(sha1_ctx);
+                EVP_MD_CTX_free(md5_ctx);
+                EVP_MD_CTX_free(sha256_ctx);
                 return;
             }
             if ( !(hashType & ALGO_MULTIPLE) ) continue;
@@ -985,7 +1004,12 @@ void LinuxGetFileHash(uint32_t hashType, PTCHAR imagePath, char *stringBuffer, s
                 strcat(stringBuffer, (char *)tmpStringBuffer);
             }
 
-            if( !(hashType & ALGO_MULTIPLE) ) return;
+            if( !(hashType & ALGO_MULTIPLE) ) {
+                EVP_MD_CTX_free(sha1_ctx);
+                EVP_MD_CTX_free(md5_ctx);
+                EVP_MD_CTX_free(sha256_ctx);
+                return;
+            }
         }
     }
 }
