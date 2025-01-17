@@ -127,7 +127,7 @@ include(ExternalProject)
 # directory before building again.
 ExternalProject_Add(openssl
                     GIT_REPOSITORY https://github.com/openssl/openssl.git
-                    GIT_TAG openssl-3.1.3
+                    GIT_TAG openssl-3.4.0
                     PREFIX ./openssl
                     CONFIGURE_COMMAND cd ../openssl && ./Configure
                     BUILD_COMMAND cd ../openssl && make
