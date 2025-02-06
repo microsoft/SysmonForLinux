@@ -1,0 +1,3 @@
+variables:
+  Codeql.ExcludePathPatterns: "**/build,**/sysmon_build,**/sysinternalsEBPF_build"
+  Codeql.Cadence: 1

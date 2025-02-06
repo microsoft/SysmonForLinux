@@ -1,0 +1,5 @@
+path_classifiers:
+  library:
+    - "**/build"
+    - "**/sysmon_build"
+    - "**/sysinternalsEBPF_build"

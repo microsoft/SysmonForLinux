@@ -58,4 +58,4 @@ stages:
         parameters:
           srcPath: 'SysmonForLinux'
           runStaticAnalysis: true
-          builddir: 'sysinternalsEBPF_build'
+          builddir: 'sysmon_build'
