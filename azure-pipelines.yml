@@ -5,7 +5,7 @@ resources:
   - repository: Sysmon
     type: github
     endpoint: sysinternals
-    name: Microsoft/SysmonforLinux
+    name: Microsoft/SysmonForLinux
 
   - repository: SysinternalsEBPF
     type: github
@@ -58,4 +58,4 @@ stages:
         parameters:
           srcPath: 'SysmonForLinux'
           runStaticAnalysis: true
-          builddir: 'sysinternalsEBPF_build'
+          builddir: 'sysmon_build'
