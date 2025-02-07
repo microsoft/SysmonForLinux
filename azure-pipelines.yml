@@ -5,7 +5,7 @@ resources:
   - repository: Sysmon
     type: github
     endpoint: sysinternals
-    name: Microsoft/SysmonforLinux
+    name: Microsoft/SysmonForLinux
 
   - repository: SysinternalsEBPF
     type: github
