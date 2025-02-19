@@ -127,10 +127,10 @@ include(ExternalProject)
 # directory before building again.
 ExternalProject_Add(openssl
                     GIT_REPOSITORY https://github.com/openssl/openssl.git
-                    GIT_TAG openssl-3.4.0
+                    GIT_TAG openssl-3.4.1
                     PREFIX ./openssl
                     CONFIGURE_COMMAND cd ../openssl && ./Configure
-                    BUILD_COMMAND cd ../openssl && make
+                    BUILD_COMMAND cd ../openssl && make && rm -rf ${PROJECT_BINARY_DIR}/openssl/src/openssl/cloudflare-quiche
                     INSTALL_COMMAND ""
                     UPDATE_COMMAND ""
                    )
