@@ -1,0 +1,6 @@
+#!/bin/sh
+
+if [ -f "/tmp/sysmon_config.xml" ]; then
+    /bin/sysmon -i /tmp/sysmon_config.xml
+    rm -rf /tmp/sysmon_config.xml
+fi
