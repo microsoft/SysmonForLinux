@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if [ -f "/opt/sysmon/config.xml" ]; then
+    cp "/opt/sysmon/config.xml" "/tmp/sysmon_config.xml"
+fi
+
+exit 0

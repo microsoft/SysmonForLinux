@@ -23,8 +23,24 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/sysmon
 /usr/share/man/man8/sysmon.8.gz
 
+%pre
+if [ -f /opt/sysmon/config.xml ]; then
+    cp /opt/sysmon/config.xml /tmp/sysmon_config.xml
+fi
+
 %post
-if [ -d /opt/sysmon ]; then rm -rf /opt/sysmon; fi
+if [ -d /opt/sysmon ]; then
+    rm -rf /opt/sysmon
+fi
+
+%posttrans
+if [ -f /tmp/sysmon_config.xml ]; then
+    /bin/sysmon -i /tmp/sysmon_config.xml
+    rm -rf /tmp/sysmon_config.xml
+fi
 
 %preun
 sysmon -u
+
+%postun
+if [ -d /opt/sysmon ]; then rm -rf /opt/sysmon; fi
