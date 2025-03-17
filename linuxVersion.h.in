@@ -32,5 +32,5 @@
 //
 #define VER_COMPANY 	"Sysinternals - www.sysinternals.com"
 
-#define VER_COPYRIGHT 	"By Mark Russinovich, Thomas Garnier and Kevin Sheldrake\nCopyright (C) 2014-2023 Microsoft Corporation\nLicensed under MIT/GPLv2\nUsing libxml2. libxml2 is Copyright (C) 1998-2012 Daniel Veillard. All Rights Reserved."
+#define VER_COPYRIGHT 	"By Mark Russinovich, Thomas Garnier and Kevin Sheldrake\nCopyright (C) 2014-2025 Microsoft Corporation\nLicensed under MIT/GPLv2\nUsing libxml2. libxml2 is Copyright (C) 1998-2012 Daniel Veillard. All Rights Reserved."
 
