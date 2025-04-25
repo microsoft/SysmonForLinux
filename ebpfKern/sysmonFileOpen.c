@@ -111,43 +111,61 @@ static inline char* set_FileOpen_info(
     inode = derefInodeFromFd(task, eventArgs->returnCode, config);
     if (inode) {
 #ifdef EBPF_CO_RE
-        if(bpf_core_field_exists(((struct inode*)inode)->__i_atime))
+        if(bpf_core_field_exists(((struct inode*)inode)->i_atime_sec) && bpf_core_field_exists(((struct inode*)inode)->i_atime_nsec))
         {
-            // Post 6.6 kernel i_atime was renamed to __i_atime
-            event->m_atime.tv_sec = BPF_CORE_READ((struct inode *)inode, __i_atime.tv_sec);
-            event->m_atime.tv_nsec = BPF_CORE_READ((struct inode *)inode, __i_atime.tv_nsec);
+            // Linux kernel 6.11+
+            event->m_atime.tv_sec = BPF_CORE_READ((struct inode*)inode, i_atime_sec);
+            event->m_atime.tv_nsec = BPF_CORE_READ((struct inode*)inode, i_atime_nsec);
+        }
+        else if (bpf_core_field_exists(((struct inode___pre_v611 *) inode)->__i_atime))
+        {
+            struct inode___pre_v611* old_inode_v611 = (void *) inode;
+            event->m_atime.tv_sec = BPF_CORE_READ(old_inode_v611, __i_atime.tv_sec);
+            event->m_atime.tv_nsec = BPF_CORE_READ(old_inode_v611, __i_atime.tv_nsec);
         }
         else
         {
-            struct inode___pre_v66* in_pre_v66 = (struct inode___pre_v66*)inode;
-            event->m_atime.tv_sec = BPF_CORE_READ(in_pre_v66, i_atime.tv_sec);
-            event->m_atime.tv_nsec = BPF_CORE_READ(in_pre_v66, i_atime.tv_nsec);
+            struct inode___pre_v66* old_inode_v66 = (void *) inode;
+            event->m_atime.tv_sec = BPF_CORE_READ(old_inode_v66, i_atime.tv_sec);
+            event->m_atime.tv_nsec = BPF_CORE_READ(old_inode_v66, i_atime.tv_nsec);
         }
 
-        if(bpf_core_field_exists(((struct inode*)inode)->__i_mtime))
+        if(bpf_core_field_exists(((struct inode*)inode)->i_mtime_sec) && bpf_core_field_exists(((struct inode*)inode)->i_mtime_nsec))
         {
-            // Post 6.6 kernel i_mtime was renamed to __i_mtime
-            event->m_mtime.tv_sec = BPF_CORE_READ((struct inode *)inode, __i_mtime.tv_sec);
-            event->m_mtime.tv_nsec = BPF_CORE_READ((struct inode *)inode, __i_mtime.tv_nsec);
+            // Linux kernel 6.11+
+            event->m_mtime.tv_sec = BPF_CORE_READ((struct inode*)inode, i_mtime_sec);
+            event->m_mtime.tv_nsec = BPF_CORE_READ((struct inode*)inode, i_mtime_nsec);
+        }
+        else if (bpf_core_field_exists(((struct inode___pre_v611 *) inode)->__i_mtime))
+        {
+            struct inode___pre_v611* old_inode_v611 = (void *) inode;
+            event->m_mtime.tv_sec = BPF_CORE_READ(old_inode_v611, __i_mtime.tv_sec);
+            event->m_mtime.tv_nsec = BPF_CORE_READ(old_inode_v611, __i_mtime.tv_nsec);
         }
         else
         {
-            struct inode___pre_v66* in_pre_v66 = (struct inode___pre_v66*)inode;
-            event->m_mtime.tv_sec = BPF_CORE_READ(in_pre_v66, i_mtime.tv_sec);
-            event->m_mtime.tv_nsec = BPF_CORE_READ(in_pre_v66, i_mtime.tv_nsec);
+            struct inode___pre_v66* old_inode_v66 = (void *) inode;
+            event->m_mtime.tv_sec = BPF_CORE_READ(old_inode_v66, i_mtime.tv_sec);
+            event->m_mtime.tv_nsec = BPF_CORE_READ(old_inode_v66, i_mtime.tv_nsec);
         }
 
-        if(bpf_core_field_exists(((struct inode*)inode)->__i_ctime))
+        if(bpf_core_field_exists(((struct inode*)inode)->i_ctime_sec) && bpf_core_field_exists(((struct inode*)inode)->i_ctime_nsec))
         {
-            // Post 6.6 kernel i_ctime was renamed to __i_ctime
-            event->m_ctime.tv_sec = BPF_CORE_READ((struct inode *)inode, __i_ctime.tv_sec);
-            event->m_ctime.tv_nsec = BPF_CORE_READ((struct inode *)inode, __i_ctime.tv_nsec);
+            // Linux kernel 6.11+
+            event->m_ctime.tv_sec = BPF_CORE_READ((struct inode*)inode, i_ctime_sec);
+            event->m_ctime.tv_nsec = BPF_CORE_READ((struct inode*)inode, i_ctime_nsec);
+        }
+        else if (bpf_core_field_exists(((struct inode___pre_v611 *) inode)->__i_ctime))
+        {
+            struct inode___pre_v611* old_inode_v611 = (void *) inode;
+            event->m_ctime.tv_sec = BPF_CORE_READ(old_inode_v611, __i_ctime.tv_sec);
+            event->m_ctime.tv_nsec = BPF_CORE_READ(old_inode_v611, __i_ctime.tv_nsec);
         }
         else
         {
-            struct inode___pre_v66* in_pre_v66 = (struct inode___pre_v66*)inode;
-            event->m_ctime.tv_sec = BPF_CORE_READ(in_pre_v66, i_ctime.tv_sec);
-            event->m_ctime.tv_nsec = BPF_CORE_READ(in_pre_v66, i_ctime.tv_nsec);
+            struct inode___pre_v66* old_inode_v66 = (void *) inode;
+            event->m_ctime.tv_sec = BPF_CORE_READ(old_inode_v66, i_ctime.tv_sec);
+            event->m_ctime.tv_nsec = BPF_CORE_READ(old_inode_v66, i_ctime.tv_nsec);
         }
 
         event->m_Mode = BPF_CORE_READ((struct inode *)inode, i_mode);

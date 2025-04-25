@@ -39,14 +39,17 @@
 
 #include <vmlinux.h>
 
-//
-// In kernel v6.6 inode i_ctime, i_atime and i_mtime field changed to __i_Xtime.
-//
-struct inode___pre_v66
-{
+struct inode___pre_v611 {
+    struct timespec64 __i_atime;
+    struct timespec64 __i_mtime;
+    struct timespec64 __i_ctime;
+};
+
+struct inode___pre_v66 {
     struct timespec64 i_atime;
     struct timespec64 i_mtime;
     struct timespec64 i_ctime;
 };
+
 
 #endif /* __VMLINUX_KERN_DIFFS_H__ */
