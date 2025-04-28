@@ -109,14 +109,26 @@ endif()
 #
 set(SYSMON_COMPRESS_MAN "sysmon.8.gz")
 
+execute_process(
+    COMMAND date "+%d %b %Y"
+    OUTPUT_VARIABLE BUILD_DATE
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+configure_file(
+    "${CMAKE_SOURCE_DIR}/package/usr/share/man/man8/sysmon_template.8"
+    "${PROJECT_BINARY_DIR}/sysmon.8"
+    @ONLY
+)
+
 add_custom_target(sysmonManPageCompress ALL
                   DEPENDS ${PROJECT_BINARY_DIR}/${SYSMON_COMPRESS_MAN}
                   )
 
 add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/${SYSMON_COMPRESS_MAN}
-                   COMMAND gzip -f -c "${CMAKE_SOURCE_DIR}/package/usr/share/man/man8/sysmon.8" > ${PROJECT_BINARY_DIR}/${SYSMON_COMPRESS_MAN}
+                   COMMAND gzip -f -c "${PROJECT_BINARY_DIR}/sysmon.8" > ${PROJECT_BINARY_DIR}/${SYSMON_COMPRESS_MAN}
                    COMMENT "Compressing Sysmon man page"
-                   DEPENDS "${CMAKE_SOURCE_DIR}/package/usr/share/man/man8/sysmon.8"
+                   DEPENDS "${PROJECT_BINARY_DIR}/sysmon.8"
                   )
 
 include(ExternalProject)
