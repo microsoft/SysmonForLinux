@@ -199,7 +199,14 @@ void telemetryReady()
     if( OPT_SET( ConfigDefault ) ) {
         SendConfigEvent( "Defaults", NULL );
     } else if( configFile ) {
-        SendConfigEvent( configFile, NULL );
+        ULONG hashType = SysmonCryptoCurrent();		// Default is sha256;
+        if(OPT_SET( HashAlgorithms )) {
+            unsigned int *hashTypePtr = OPT_VALUE( HashAlgorithms );
+            hashType = *hashTypePtr;
+        }
+        TCHAR buff[256];
+        LinuxGetFileHash(hashType, configFile, buff, _countof(buff));
+        SendConfigEvent( configFile, buff );
     } else {
         SendConfigEvent( GetCommandLine(), NULL );
     }
@@ -1121,7 +1128,14 @@ void configChange()
     //
     // Send config change event
     //
-    SendConfigEvent( configFile, NULL );
+    ULONG hashType = SysmonCryptoCurrent();		// Default is sha256;
+    if(OPT_SET( HashAlgorithms )) {
+        unsigned int *hashTypePtr = OPT_VALUE( HashAlgorithms );
+        hashType = *hashTypePtr;
+    }
+    TCHAR buff[256];
+    LinuxGetFileHash(hashType, configFile, buff, _countof(buff));
+    SendConfigEvent( configFile, buff );
 
     fflush(NULL);
 }
@@ -1357,7 +1371,6 @@ main(
             }
         }
         else {
-
             if (!copyConfigFile(configFile)) {
                 fprintf(stderr, "Cannot copy the config file\n");
                 return ERROR_INVALID_PARAMETER;
