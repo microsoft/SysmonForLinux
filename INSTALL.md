@@ -1,7 +1,7 @@
 # Install Sysmon
 Please see the history of this file for instructions for older, unsupported versions.
 
-## Ubuntu 20.04, 22.04, 23.04
+## Ubuntu
 #### 1. Register Microsoft key and feed
 ```sh
 wget -q https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
@@ -14,10 +14,10 @@ sudo apt-get update
 sudo apt-get install sysmonforlinux
 ```
 
-## Debian 11
+## Debian
 #### 1. Register Microsoft key and feed
 ```sh
-wget -q https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+wget -q https://packages.microsoft.com/config/debian/$(. /etc/os-release && echo ${VERSION_ID%%.*})/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
 sudo dpkg -i packages-microsoft-prod.deb
 ```
 
@@ -29,25 +29,10 @@ sudo apt-get update
 sudo apt-get install sysmonforlinux
 ```
 
-## Debian 12
+## Fedora
 #### 1. Register Microsoft key and feed
 ```sh
-wget -q https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-sudo dpkg -i packages-microsoft-prod.deb
-```
-
-#### 2. Install SysmonForLinux
-```sh
-sudo apt-get update
-sudo apt-get install apt-transport-https
-sudo apt-get update
-sudo apt-get install sysmonforlinux
-```
-
-## Fedora 37
-#### 1. Register Microsoft key and feed
-```sh
-sudo rpm -Uvh https://packages.microsoft.com/config/fedora/37/packages-microsoft-prod.rpm
+sudo rpm -Uvh https://packages.microsoft.com/config/fedora/$(rpm -E %fedora)/packages-microsoft-prod.rpm
 ```
 
 #### 2. Install SysmonForLinux
@@ -55,32 +40,10 @@ sudo rpm -Uvh https://packages.microsoft.com/config/fedora/37/packages-microsoft
 sudo dnf install sysmonforlinux
 ```
 
-## Fedora 38
+## RHEL
 #### 1. Register Microsoft key and feed
 ```sh
-sudo rpm -Uvh https://packages.microsoft.com/config/fedora/38/packages-microsoft-prod.rpm
-```
-
-#### 2. Install SysmonForLinux
-```sh
-sudo dnf install sysmonforlinux
-```
-
-## RHEL 8
-#### 1. Register Microsoft key and feed
-```sh
-sudo rpm -Uvh https://packages.microsoft.com/config/rhel/8/packages-microsoft-prod.rpm
-```
-
-#### 2. Install SysmonForLinux
-```sh
-sudo dnf install sysmonforlinux
-```
-
-## RHEL 9
-#### 1. Register Microsoft key and feed
-```sh
-sudo rpm -Uvh https://packages.microsoft.com/config/rhel/9/packages-microsoft-prod.rpm
+sudo rpm -Uvh https://packages.microsoft.com/config/rhel/$(. /etc/os-release && echo ${VERSION_ID%%.*})/packages-microsoft-prod.rpm
 ```
 
 #### 2. Install SysmonForLinux
