@@ -377,7 +377,7 @@ bool createEmptyConfigFile()
     if (fd < 0)
         return false;
 
-    if (write(fd, empty, strlen(empty) + 1) != -1) {
+    if (write(fd, empty, strlen(empty)) != -1) {
         ret = true;
     }
 
