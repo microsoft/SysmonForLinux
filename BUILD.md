@@ -19,7 +19,7 @@ If you installed SysinternalsEBPF via make install, you may need to add /usr/loc
 ```
 sudo dnf update
 dotnet tool install --global dotnet-t4 --version 2.3.1
-sudo dnf install gcc gcc-c++ make cmake llvm clang elfutils-libelf-devel rpm-build json-glib-devel python3 libxml2-devel gtest-devel gmock gmock-devel openssl-devel
+sudo dnf install gcc gcc-c++ make cmake llvm clang elfutils-libelf-devel rpm-build json-glib-devel python3 libxml2-devel gtest-devel gmock gmock-devel openssl-devel perl
 ```
 
 ### Ubuntu 20.04+
