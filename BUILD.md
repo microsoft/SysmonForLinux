@@ -11,9 +11,16 @@ project or via the `sysinternalsebpf` DEB package from the
 _packages.microsoft.com_ repository (see [INSTALL.md](INSTALL.md)).
 If you installed SysinternalsEBPF via make install, you may need to add /usr/local/lib to the loader library path (LD_LIBRARY_PATH).
 
-- .NET 6 SDK. Please see [.NET Installation](https://learn.microsoft.com/en-us/dotnet/core/install/linux). Note: If during installation you encounter "A fatal error occurred. The folder [/usr/share/dotnet/host/fxr] does not exist", please see [here](https://stackoverflow.com/questions/73753672/a-fatal-error-occurred-the-folder-usr-share-dotnet-host-fxr-does-not-exist)
+- .NET SDK. Please see [.NET Installation](https://learn.microsoft.com/en-us/dotnet/core/install/linux). Note: If during installation you encounter "A fatal error occurred. The folder [/usr/share/dotnet/host/fxr] does not exist", please see [here](https://stackoverflow.com/questions/73753672/a-fatal-error-occurred-the-folder-usr-share-dotnet-host-fxr-does-not-exist)
 
 - clang/llvm v10+
+
+### Azure Linux
+```
+sudo dnf update
+dotnet tool install --global dotnet-t4 --version 2.3.1
+sudo dnf install gcc gcc-c++ make cmake llvm clang elfutils-libelf-devel rpm-build json-glib-devel python3 libxml2-devel gtest-devel gmock gmock-devel openssl-devel perl
+```
 
 ### Ubuntu 20.04+
 ```
