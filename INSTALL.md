@@ -1,6 +1,11 @@
 # Install Sysmon
 Please see the history of this file for instructions for older, unsupported versions.
 
+## Azure Linux 3
+```sh
+sudo dnf install sysmonforlinux
+```
+
 ## Ubuntu
 #### 1. Register Microsoft key and feed
 ```sh
@@ -8,7 +13,7 @@ wget -q https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages
 sudo dpkg -i packages-microsoft-prod.deb
 ```
 
-#### 2. Install SysmonForLinux
+#### 2. Install sysmonforlinux
 ```sh
 sudo apt-get update
 sudo apt-get install sysmonforlinux
@@ -21,10 +26,8 @@ wget -q https://packages.microsoft.com/config/debian/$(. /etc/os-release && echo
 sudo dpkg -i packages-microsoft-prod.deb
 ```
 
-#### 2. Install SysmonForLinux
+#### 2. Install sysmonforlinux
 ```sh
-sudo apt-get update
-sudo apt-get install apt-transport-https
 sudo apt-get update
 sudo apt-get install sysmonforlinux
 ```
@@ -35,9 +38,10 @@ sudo apt-get install sysmonforlinux
 sudo rpm -Uvh https://packages.microsoft.com/config/fedora/$(rpm -E %fedora)/packages-microsoft-prod.rpm
 ```
 
-#### 2. Install SysmonForLinux
+#### 2. Install sysmonforlinux
 ```sh
-sudo dnf install sysmonforlinux
+sudo apt-get update
+sudo apt-get install sysmonforlinux
 ```
 
 ## RHEL
@@ -46,9 +50,9 @@ sudo dnf install sysmonforlinux
 sudo rpm -Uvh https://packages.microsoft.com/config/rhel/$(. /etc/os-release && echo ${VERSION_ID%%.*})/packages-microsoft-prod.rpm
 ```
 
-#### 2. Install SysmonForLinux
+#### 2. Install sysmonforlinux
 ```sh
-sudo dnf install sysmonforlinux
+sudo yum install sysmonforlinux
 ```
 
 ## openSUSE 15
