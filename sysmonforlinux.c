@@ -114,7 +114,8 @@ const ebpfSyscallTPprog         TPexitProgs[] =
     {__NR_recvmsg, "UDPrecvExit"},
     {__NR_recvmmsg, "UDPrecvExit"},
     {__NR_read, "UDPrecvExit"},
-    {__NR_close, "CloseFDExit"}
+    {__NR_close, "CloseFDExit"},
+    {__NR_bpf, "BPFLoadExit"}
 };
 
 const ebpfSyscallRTPprog        RTPenterProgs[] =
@@ -142,7 +143,8 @@ const ebpfSyscallRTPprog        RTPexitProgs[] =
     {"UDPrecvRawExit", __NR_recvmsg},
     {"UDPrecvRawExit", __NR_recvmmsg},
     {"UDPrecvRawExit", __NR_read},
-    {"CloseFDRawExit", __NR_close}
+    {"CloseFDRawExit", __NR_close},
+    {"BPFLoadRawExit", __NR_bpf}
 };
 
 const ebpfTracepointProg        otherTPprogs4_15[] =
@@ -204,7 +206,7 @@ void telemetryReady()
             unsigned int *hashTypePtr = OPT_VALUE( HashAlgorithms );
             hashType = *hashTypePtr;
         }
-        TCHAR buff[256];
+        TCHAR buff[256] = {0};
         LinuxGetFileHash(hashType, configFile, buff, _countof(buff));
         SendConfigEvent( configFile, buff );
     } else {
@@ -454,6 +456,35 @@ pid_t getPidFromTid(pid_t tid)
         closedir(d);
     }
     return -1;
+}
+
+//--------------------------------------------------------------------
+//
+// processEBPFEvent
+//
+// Handles eBPF program load events. This is a Linux-only event
+// (Event ID 100) that tracks when eBPF programs are loaded.
+//
+//--------------------------------------------------------------------
+void processEBPFEvent(CONST PSYSMON_EVENT_HEADER eventHdr)
+{
+    if (eventHdr == NULL) {
+        fprintf(stderr, "processEBPFEvent invalid params\n");
+        return;
+    }
+
+    // The LinuxEBPFEvent is processed and logged directly
+    // The event contains:
+    //   - m_ProcessId: PID of the process loading the BPF program
+    //   - m_EventTime: Timestamp
+    //   - m_BpfCmd: BPF command (e.g., BPF_PROG_LOAD)
+    //   - m_ProgType: BPF program type
+    //   - m_ProgId: BPF program file descriptor/ID
+    //   - Extensions: Sid, ImagePath, ProgName
+
+    // For now, dispatch directly to the event system
+    // Additional processing could be added here if needed
+    DispatchEvent(eventHdr);
 }
 
 //--------------------------------------------------------------------
@@ -726,6 +757,9 @@ static void handleEvent(void *ctx, int cpu, void *data, uint32_t size)
             DispatchEvent(eventHdr);
             break;
         }
+        case LinuxEBPFEvent:
+            processEBPFEvent(eventHdr);
+            break;
         default:
             DispatchEvent(eventHdr);
     }
@@ -888,6 +922,9 @@ void SetSyscallActive(bool *s, ULONG eventId)
             break;
         case SYSMONEVENT_ACCESS_PROCESS_EVENT_value:
             s[__NR_ptrace] = true;
+            break;
+        case SYSMONEVENT_EBPF_EVENT_EVENT_value:
+            s[__NR_bpf] = true;
             break;
         default:
             break;
@@ -1133,7 +1170,7 @@ void configChange()
         unsigned int *hashTypePtr = OPT_VALUE( HashAlgorithms );
         hashType = *hashTypePtr;
     }
-    TCHAR buff[256];
+    TCHAR buff[256] = {0};
     LinuxGetFileHash(hashType, configFile, buff, _countof(buff));
     SendConfigEvent( configFile, buff );
 

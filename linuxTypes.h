@@ -547,6 +547,7 @@ typedef struct _SECURITY_LOGON_SESSION_DATA {
 
 #define LinuxFileOpen           0xFF01
 #define LinuxNetworkEvent       0xFF02
+#define LinuxEBPFEvent          0xFF03
 
 #define __NR_NETWORK            400
 #define __NR_PROCTERM           401
@@ -591,6 +592,27 @@ typedef struct {
     ULONG                   m_OldState;
     ULONG                   m_NewState;
 } SYSMON_LINUX_NETWORK_EVENT, *PSYSMON_LINUX_NETWORK_EVENT;
+
+
+// eBPF program load/run event - Linux only
+// BPF commands from linux/bpf.h
+#define BPF_CMD_PROG_LOAD       5
+
+typedef enum {
+    LINUX_EBPF_Sid,
+    LINUX_EBPF_ImagePath,
+    LINUX_EBPF_ProgName,
+    LINUX_EBPF_ExtMax
+} LINUX_EBPF_Extensions;
+
+typedef struct {
+    ULONG                   m_ProcessId;
+    LARGE_INTEGER           m_EventTime;
+    ULONG                   m_BpfCmd;           // BPF command (e.g., BPF_PROG_LOAD)
+    ULONG                   m_ProgType;         // BPF program type
+    ULONG                   m_ProgId;           // BPF program ID (returned by kernel)
+    ULONG                   m_Extensions[LINUX_EBPF_ExtMax];
+} SYSMON_LINUX_EBPF_EVENT, *PSYSMON_LINUX_EBPF_EVENT;
 
 
 
