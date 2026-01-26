@@ -16,9 +16,12 @@
 
 //====================================================================
 //
-// sysmonGetEventName
+// sysmonGetEventName.c
 //
 // Converts an event ID into its string name.
+// This file must be compiled as C (not C++) because SYSMON_EVENT_C
+// causes sysmonevents.h to define arrays of string literals, which
+// C++ treats as const char* but the generated code uses char*.
 //
 //====================================================================
 
@@ -30,7 +33,12 @@
 
 const char *eventName(unsigned int eventId)
 {
-    return AllEvents[eventId]->EventName;
+    // Use EventTypesById which is indexed by event ID
+    // Check bounds and NULL pointer
+    if (eventId >= EventTypesByIdCount || EventTypesById[eventId] == NULL) {
+        return "UNKNOWN_EVENT";
+    }
+    return EventTypesById[eventId]->EventName;
 }
 
 

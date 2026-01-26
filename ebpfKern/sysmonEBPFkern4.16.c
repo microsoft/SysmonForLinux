@@ -47,5 +47,6 @@
 #include "sysmonUDPsend.c"
 #include "sysmonUDPrecv_tp.c"
 #include "sysmonCloseFD_tp.c"
+#include "sysmonBPFLoad_tp.c"
 
 char _license[] SEC("license") = "GPL";
