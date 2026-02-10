@@ -23,6 +23,7 @@ Type=forking
 User=root
 WorkingDirectory=/opt/sysmon
 ExecStart=/opt/sysmon/sysmon -i /opt/sysmon/config.xml -service
+LimitMEMLOCK=infinity
 Restart=on-failure
 RestartSec=10
 
