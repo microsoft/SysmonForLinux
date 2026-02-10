@@ -120,8 +120,19 @@ static inline bool getEventHdr(PSYSMON_EVENT_HEADER *eventHdr, uint32_t cpuId)
 __attribute__((always_inline))
 static inline void checkAndSendEvent(void *ctx, const PSYSMON_EVENT_HEADER eventHdr, const ebpfConfig *config)
 {
-    size_t size = eventHdr->m_EventSize;
-    eventOutput(ctx, &eventMap, BPF_F_CURRENT_CPU, eventHdr, size < LINUX_MAX_EVENT_SIZE ? size : 0);
+    uint64_t size = eventHdr->m_EventSize;
+    // Use asm volatile to perform the size bound check in a single register.
+    // Without this, clang may split the comparison and value across different
+    // registers when inlining, causing the eBPF verifier to lose track of the
+    // bound (resulting in "R5 unbounded memory access" errors).
+    // Note: use "i" constraint to pass LINUX_MAX_EVENT_SIZE as a compiler-
+    // evaluated immediate, since XSTR() would stringify the unexpanded
+    // expression (e.g. "(65536 - 24)") which is invalid in BPF asm.
+    asm volatile("if %[size] < %[max] goto +1\n\t"
+                 "%[size] = 0"
+                 : [size]"+r"(size)
+                 : [max]"i"(LINUX_MAX_EVENT_SIZE));
+    eventOutput(ctx, &eventMap, BPF_F_CURRENT_CPU, eventHdr, size);
 }
 
 //--------------------------------------------------------------------
@@ -135,8 +146,19 @@ static inline void checkAndSendEvent(void *ctx, const PSYSMON_EVENT_HEADER event
 __attribute__((always_inline))
 static inline void checkAndSendEventNoError(void *ctx, const PSYSMON_EVENT_HEADER eventHdr, const ebpfConfig *config)
 {
-    size_t size = eventHdr->m_EventSize;
-    bpf_perf_event_output(ctx, &eventMap, BPF_F_CURRENT_CPU, eventHdr, size < LINUX_MAX_EVENT_SIZE ? size : 0);
+    uint64_t size = eventHdr->m_EventSize;
+    // Use asm volatile to perform the size bound check in a single register.
+    // Without this, clang may split the comparison and value across different
+    // registers when inlining, causing the eBPF verifier to lose track of the
+    // bound (resulting in "R5 unbounded memory access" errors).
+    // Note: use "i" constraint to pass LINUX_MAX_EVENT_SIZE as a compiler-
+    // evaluated immediate, since XSTR() would stringify the unexpanded
+    // expression (e.g. "(65536 - 24)") which is invalid in BPF asm.
+    asm volatile("if %[size] < %[max] goto +1\n\t"
+                 "%[size] = 0"
+                 : [size]"+r"(size)
+                 : [max]"i"(LINUX_MAX_EVENT_SIZE));
+    bpf_perf_event_output(ctx, &eventMap, BPF_F_CURRENT_CPU, eventHdr, size);
 }
  
 #endif
