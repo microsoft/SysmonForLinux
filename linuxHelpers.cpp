@@ -907,8 +907,8 @@ void LinuxGetFileHash(uint32_t hashType, PTCHAR imagePath, char *stringBuffer, s
         return;
     }
 
-    EVP_DigestInit(sha1_ctx  , EVP_sha1());
-    EVP_DigestInit(md5_ctx   , EVP_md5());
+    EVP_DigestInit(sha1_ctx  , EVP_sha1()); // CodeQL [SM02689] SHA1 use is intentional here, Sysmon needs it for historical reasons
+    EVP_DigestInit(md5_ctx   , EVP_md5());  // CodeQL [SM02689] MD5 use is intentional here, Sysmon needs it for historical reasons
     EVP_DigestInit(sha256_ctx, EVP_sha256());
 
     hashFlag[ALGO_SHA1] = (((hashType>>(ALGO_SHA1-1))&1) && (hashType & ALGO_MULTIPLE)) || (hashType == ALGO_SHA1);
