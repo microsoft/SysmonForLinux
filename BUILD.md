@@ -26,10 +26,10 @@ sudo dnf install gcc gcc-c++ make cmake llvm clang elfutils-libelf-devel rpm-bui
 ```
 sudo apt update
 dotnet tool install --global dotnet-t4 --version 2.3.1
-sudo apt -y install build-essential gcc g++ make cmake libelf-dev llvm clang libxml2 libxml2-dev libzstd1 git libgtest-dev apt-transport-https dirmngr googletest google-mock libgmock-dev libjson-glib-dev libssl-dev
+sudo apt -y install build-essential gcc g++ make cmake libelf-dev llvm clang libxml2 libxml2-dev libzstd1 git libgtest-dev apt-transport-https dirmngr googletest google-mock libgmock-dev  libjson-glib-dev libssl-dev
 ```
 
-### Rocky 9
+### Rocky 9+
 ```
 sudo dnf install dnf-plugins-core
 sudo dnf config-manager --set-enabled crb
@@ -37,7 +37,7 @@ sudo dnf install epel-release
 
 sudo dnf update
 dotnet tool install --global dotnet-t4 --version 2.3.1
-sudo yum install gcc gcc-c++ make cmake llvm clang elfutils-libelf-devel rpm-build json-glib-devel python3 libxml2-devel gtest-devel gmock gmock-devel openssl-devel
+sudo yum install gcc gcc-c++ make cmake llvm clang elfutils-libelf-devel rpm-build json-glib-devel python3 libxml2-devel gtest-devel gmock gmock-devel openssl-devel perl
 ```
 
 ### Rocky 8
@@ -51,7 +51,13 @@ dotnet tool install --global dotnet-t4 --version 2.3.1
 sudo yum install gcc gcc-c++ make cmake llvm clang elfutils-libelf-devel rpm-build json-glib-devel python3 libxml2-devel gtest-devel gmock gmock-devel openssl-devel
 ```
 
-### Debian 11
+### Fedora
+```
+dotnet tool install --global dotnet-t4 --version 2.3.1
+sudo yum install gcc gcc-c++ make cmake llvm clang elfutils-libelf-devel rpm-build json-glib-devel python3 libxml2-devel gtest-devel gmock gmock-devel openssl-devel perl
+```
+
+### Debian
 ```
 wget https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
 sudo dpkg -i packages-microsoft-prod.deb

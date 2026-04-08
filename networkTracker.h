@@ -250,7 +250,7 @@ public:
 
 #else
 struct NetworkTracker;
-struct NetworkTracker *NetworkTrackerInit();
+struct NetworkTracker *NetworkTrackerInit(LONGLONG staleSeconds, LONGLONG checkSeconds);
 pid_t NetworkTrackerSeenConnect(struct NetworkTracker *n, PSYSMON_EVENT_HEADER eventHdr);
 
 void NetworkTrackerSeenFullAccept(struct NetworkTracker *n, bool IPv4, BYTE *sourceAddr, unsigned short sourcePort,
