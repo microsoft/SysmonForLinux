@@ -51,6 +51,12 @@ dotnet tool install --global dotnet-t4 --version 2.3.1
 sudo yum install gcc gcc-c++ make cmake llvm clang elfutils-libelf-devel rpm-build json-glib-devel python3 libxml2-devel gtest-devel gmock gmock-devel openssl-devel
 ```
 
+### Fedora
+```
+dotnet tool install --global dotnet-t4 --version 2.3.1
+sudo yum install gcc gcc-c++ make cmake llvm clang elfutils-libelf-devel rpm-build json-glib-devel python3 libxml2-devel gtest-devel gmock gmock-devel openssl-devel perl
+```
+
 ### Debian
 ```
 wget https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
