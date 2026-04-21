@@ -23,7 +23,6 @@
 //
 //====================================================================
 
-#include <libxml/parser.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -38,6 +37,7 @@
 #include <dirent.h>
 #include <sys/mman.h>
 #include <asm/unistd.h>
+#include <stdarg.h>
 #include <dlfcn.h>
 #include <libsysinternalsEBPF.h>
 #include <sysinternalsEBPFshared.h>
@@ -1233,8 +1233,6 @@ main(
     // Find boot time and clock tick interval, used for calculating process start times
     //
     SetBootTime();
-
-	LIBXML_TEST_VERSION
 
     umask(SYSMON_UMASK);
 

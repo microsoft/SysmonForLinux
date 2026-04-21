@@ -21,8 +21,6 @@ sudo apt-get install -y --no-install-recommends \
         libelf-dev \
         llvm \
         clang \
-        libxml2 \
-        libxml2-dev \
         libzstd1 \
         libgtest-dev \
         libc6-dev-i386 \

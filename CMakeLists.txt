@@ -90,12 +90,12 @@ add_compile_options(-Wall -Werror -g -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fsta
 #
 # support for C++17
 #
-set(CMAKE_CXX_FLAGS "-std=gnu++17")
+set(CMAKE_CXX_FLAGS "-std=gnu++17 -Wno-write-strings")
 
 #
-# rely on libxml2 having been installed, for XML configuration and output
+# pugixml - vendored lightweight XML library (replaces libxml2)
 #
-find_package(LibXml2 2.0.0 REQUIRED)
+set(PUGIXML_SOURCE_DIR "${CMAKE_SOURCE_DIR}/pugixml")
 
 #
 # source directories
@@ -161,7 +161,9 @@ add_executable(sysmon
                linuxWideChar.c
                linuxHelpers.cpp
                networkTracker.cpp
-               outputxml.c
+               outputxml.cpp
+               sysmonevents_defs.c
+               ${PUGIXML_SOURCE_DIR}/pugixml.cpp
                installer.c
                "${SYSMON_COMMON_SOURCE_DIR}/usage.c"
                "${SYSMON_COMMON_SOURCE_DIR}/parsecommandline.c"
@@ -213,7 +215,7 @@ target_include_directories(sysmon PUBLIC
                            "${PROJECT_BINARY_DIR}"
                            "/usr/include"
                            "/usr/local/include"
-                           "${LIBXML2_INCLUDE_DIR}"
+                           "${PUGIXML_SOURCE_DIR}"
                            "/opt/sysinternalsEBPF/ebpfKern"
                           )
 
@@ -370,7 +372,7 @@ set(EBPF_DEPENDS
 #
 # link sysmon
 #
-target_link_libraries(sysmon sysinternalsEBPF "${LIBXML2_LIBRARIES}" pthread ${openssl_SOURCE_DIR}/libcrypto.a ${CMAKE_DL_LIBS} )
+target_link_libraries(sysmon sysinternalsEBPF pthread ${openssl_SOURCE_DIR}/libcrypto.a ${CMAKE_DL_LIBS} )
 
 
 #
@@ -379,6 +381,7 @@ target_link_libraries(sysmon sysinternalsEBPF "${LIBXML2_LIBRARIES}" pthread ${o
 add_executable(sysmonLogView
                sysmonLogView/sysmonLogView.cpp
                sysmonLogView/sysmonGetEventName.c
+               ${PUGIXML_SOURCE_DIR}/pugixml.cpp
                sysmonmsgop.c
                sysmonevents.h
                sysmonmsg.h
@@ -390,10 +393,10 @@ target_include_directories(sysmonLogView PUBLIC
                            "${SYSMON_COMMON_SOURCE_DIR}"
                            "${PROJECT_BINARY_DIR}"
                            "/usr/include"
-                           "${LIBXML2_INCLUDE_DIR}"
+                           "${PUGIXML_SOURCE_DIR}"
                            )
 
-target_link_libraries(sysmonLogView "${LIBXML2_LIBRARIES}")
+target_link_libraries(sysmonLogView )
 
 
 #
@@ -425,7 +428,9 @@ add_executable(sysmonUnitTests
                test/linuxRules.cpp
                linuxWideChar.c
                linuxHelpers.cpp
-               outputxml.c
+               outputxml.cpp
+               sysmonevents_defs.c
+               ${PUGIXML_SOURCE_DIR}/pugixml.cpp
                hexdump.c
                "${SYSMON_COMMON_SOURCE_DIR}/parsecommandline.c"
                "${SYSMON_COMMON_SOURCE_DIR}/xml.cpp"
@@ -439,14 +444,14 @@ add_executable(sysmonUnitTests
                "${PROJECT_BINARY_DIR}/yoursleep"
                )
 
-target_link_libraries(sysmonUnitTests "${LIBXML2_LIBRARIES}" ${GTEST_LIBRARIES} pthread ${openssl_SOURCE_DIR}/libcrypto.a ${CMAKE_DL_LIBS})
+target_link_libraries(sysmonUnitTests ${GTEST_LIBRARIES} pthread ${openssl_SOURCE_DIR}/libcrypto.a ${CMAKE_DL_LIBS})
 target_include_directories(sysmonUnitTests PUBLIC
                            "${CMAKE_SOURCE_DIR}"
                            "${SYSMON_COMMON_SOURCE_DIR}"
                            "${SYSMON_TESTS_SOURCE_DIR}"
                            "${PROJECT_BINARY_DIR}"
                            "/usr/include"
-                           "${LIBXML2_INCLUDE_DIR}"
+                           "${PUGIXML_SOURCE_DIR}"
                            "${GTEST_INCLUDE_DIRS}"
                            )
 

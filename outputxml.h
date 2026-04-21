@@ -28,6 +28,10 @@
 #include "linuxTypes.h"
 #include "sysmonevents.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 VOID FormatSyslogString(
     PCHAR EventStr,
     size_t EventMax,
@@ -35,5 +39,9 @@ VOID FormatSyslogString(
     CONST EVENT_DATA_DESCRIPTOR* Fields,
     unsigned int FieldCount
     );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

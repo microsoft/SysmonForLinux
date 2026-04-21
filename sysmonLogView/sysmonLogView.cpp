@@ -29,10 +29,7 @@
 #include <unordered_set>
 #include <getopt.h>
 #include <string.h>
-#include <libxml/parser.h>
-#include <libxml/tree.h>
-#include <libxml/xpath.h>
-#include <libxml/xpathInternals.h>
+#include <pugixml.hpp>
 #include <time.h>
 #include <pthread.h>
 
@@ -501,31 +498,6 @@ void processCmdline(int argc, char *argv[],
 
 //--------------------------------------------------------------------
 //
-// getXpath
-//
-// Apply a XPath query to the given XML document and return the table
-// of matching XML nodes.
-//
-//--------------------------------------------------------------------
-xmlNode **getXpath(xmlDoc *doc, xmlXPathContextPtr xpathCtx, const char *xpathQuery)
-{
-    if (doc == NULL || xpathCtx == NULL || xpathQuery == NULL) {
-        fprintf(stderr, "getXpath invalid params\n");
-        return NULL;
-    }
-
-    xmlXPathObjectPtr xpathObj;
-
-    xpathObj = xmlXPathEvalExpression( (xmlChar *)xpathQuery, xpathCtx );
-    if( !xpathObj || !xpathObj->nodesetval || xpathObj->nodesetval->nodeNr < 1 ) {
-        return NULL;
-    }
-    return xpathObj->nodesetval->nodeTab;
-
-}
-
-//--------------------------------------------------------------------
-//
 // isInRange
 //
 // Checks if the given value is within the specified range.
@@ -559,27 +531,20 @@ int main(int argc, char *argv[])
     char *line = NULL;
     size_t line_len = 0;
     const char *ptr = NULL;
-    xmlDoc *doc;
-    xmlXPathContextPtr xpathCtx;
-    const char eventIdQuery[] = "/Event/System/EventID[1]";
-    const char recordIdQuery[] = "/Event/System/EventRecordID[1]";
-    const char timeCreatedQuery[] = "/Event/System/TimeCreated[1]";
-    const char eventDataQuery[] = "/Event/EventData[1]";
+    const char eventIdQuery[] = "/Event/System/EventID";
+    const char recordIdQuery[] = "/Event/System/EventRecordID";
+    const char timeCreatedQuery[] = "/Event/System/TimeCreated";
+    const char eventDataQuery[] = "/Event/EventData";
     const char systemTime[] = "SystemTime";
     const char dataString[] = "Data";
     const char dataName[] = "Name";
-    const xmlNode **nodeTab;
-    list<string> eventFields;
 
     unsigned int eventId;
     unsigned long recordId;
     unsigned long timeCreated;
-    xmlNode *data;
     bool filterOut = false;
     const char *name;
     const char *value;
-
-    LIBXML_TEST_VERSION
 
     processCmdline(argc, argv, &eventIds, &eventIdFields, &recordIdRange, &timeRange, &filters, &extraCR);
 
@@ -594,79 +559,59 @@ int main(int argc, char *argv[])
         if (ptr == NULL)
             continue;
 
-        doc = xmlReadDoc((xmlChar *)ptr, "", NULL, 0);
-        if (doc == NULL) {
-            fprintf(stderr, "xmlReadDoc failed\n");
+        pugi::xml_document doc;
+        pugi::xml_parse_result result = doc.load_string(ptr);
+        if (!result) {
+            fprintf(stderr, "XML parse failed\n");
             continue;
         }
 
-        xpathCtx = xmlXPathNewContext( doc );
-        if( !xpathCtx ) {
-            fprintf(stderr, "xmlXPathNewContext failed\n");
-            xmlFreeDoc(doc);
+        pugi::xpath_node eventIdNode = doc.select_node(eventIdQuery);
+        if (!eventIdNode) {
             continue;
         }
-
-        nodeTab = (const xmlNode**)getXpath(doc, xpathCtx, eventIdQuery);
-        if (nodeTab == NULL) {
-            xmlXPathFreeContext(xpathCtx);
-            xmlFreeDoc(doc);
-            continue;
-        }
-        eventId = (unsigned int)(strtoul((char *)xmlNodeListGetString(doc, nodeTab[0]->children, 1), NULL, 0));
+        eventId = (unsigned int)(strtoul(eventIdNode.node().child_value(), NULL, 0));
 
         if (!eventIds.empty() && eventIds.find(eventId) == eventIds.end()) {
-            xmlXPathFreeContext(xpathCtx);
-            xmlFreeDoc(doc);
             continue;
         }
 
-        nodeTab = (const xmlNode**)getXpath(doc, xpathCtx, recordIdQuery);
-        if (nodeTab == NULL) {
-            xmlXPathFreeContext(xpathCtx);
-            xmlFreeDoc(doc);
+        pugi::xpath_node recordIdNode = doc.select_node(recordIdQuery);
+        if (!recordIdNode) {
             continue;
         }
-        recordId = strtoul((char *)xmlNodeListGetString(doc, nodeTab[0]->children, 1), NULL, 0);
+        recordId = strtoul(recordIdNode.node().child_value(), NULL, 0);
 
         if (recordIdRange.first != (unsigned long)-1 || recordIdRange.second != (unsigned long)-1) {
             if (!isInRange(recordIdRange, recordId)) {
-                xmlXPathFreeContext(xpathCtx);
-                xmlFreeDoc(doc);
                 continue;
             }
         }
 
         if (timeRange.first != (unsigned long)-1 || timeRange.second != (unsigned long)-1) {
-            nodeTab = (const xmlNode**)getXpath(doc, xpathCtx, timeCreatedQuery);
-            if (nodeTab == NULL) {
-                xmlXPathFreeContext(xpathCtx);
-                xmlFreeDoc(doc);
+            pugi::xpath_node timeCreatedNode = doc.select_node(timeCreatedQuery);
+            if (!timeCreatedNode) {
                 continue;
             }
-            timeCreated = systemTimeStrToUl((char *)xmlGetProp(nodeTab[0], (xmlChar *)systemTime));
+            timeCreated = systemTimeStrToUl(timeCreatedNode.node().attribute(systemTime).value());
             if (!isInRange(timeRange, timeCreated)) {
-                xmlXPathFreeContext(xpathCtx);
-                xmlFreeDoc(doc);
                 continue;
             }
         }
 
-        nodeTab = (const xmlNode**)getXpath(doc, xpathCtx, eventDataQuery);
-        if (nodeTab == NULL) {
-            xmlXPathFreeContext(xpathCtx);
-            xmlFreeDoc(doc);
+        pugi::xpath_node eventDataNode = doc.select_node(eventDataQuery);
+        if (!eventDataNode) {
             continue;
         }
 
         filterOut = false;
-        for (data = nodeTab[0]->children; data != NULL && !filterOut; data = data->next) {
-            if (data->type != XML_ELEMENT_NODE || strcmp((char *)data->name, dataString) != 0)
+        for (pugi::xml_node data = eventDataNode.node().first_child(); data && !filterOut; data = data.next_sibling()) {
+            if (data.type() != pugi::node_element || strcmp(data.name(), dataString) != 0)
                 continue;
-            name = (char *)xmlGetProp(data, (xmlChar *)dataName);
+            name = data.attribute(dataName).value();
             const auto filter = filters.find(string(name));
             if (filter != filters.end()) {
-                value = (char *)xmlNodeListGetString(doc, data->children, 1);
+                value = data.child_value();
                 if (filter->second.find(string(value)) == filter->second.end()) {
                     filterOut = true;
                 }
@@ -674,8 +619,6 @@ int main(int argc, char *argv[])
         }
 
         if (filterOut) {
-            xmlXPathFreeContext(xpathCtx);
-            xmlFreeDoc(doc);
             continue;
         }
 
@@ -683,13 +626,13 @@ int main(int argc, char *argv[])
 
         printf("Event %s\n", eventName(eventId));
 
-        for (data = nodeTab[0]->children; data != NULL; data = data->next) {
-            if (data->type != XML_ELEMENT_NODE || strcmp((char *)data->name, dataString) != 0)
+        for (pugi::xml_node data = eventDataNode.node().first_child(); data; data = data.next_sibling()) {
+            if (data.type() != pugi::node_element || strcmp(data.name(), dataString) != 0)
                 continue;
-            name = (const char *)xmlGetProp(data, (xmlChar *)dataName);
+            name = data.attribute(dataName).value();
             if (eventIdDisplay != eventIdFields.end() && eventIdDisplay->second.find(string(name)) == eventIdDisplay->second.end())
                 continue;
-            value = (const char *)xmlNodeListGetString(doc, data->children, 1);
+            value = data.child_value();
             if (value == NULL || value[0] == 0x00) {
                 printf("\t%s: --NULL--\n", name);
             } else {
@@ -699,12 +642,8 @@ int main(int argc, char *argv[])
 
         if (extraCR)
             printf("\n");
-
-        xmlXPathFreeContext(xpathCtx);
-        xmlFreeDoc(doc);
     }
 
-    xmlCleanupParser();
     return 0;
 }
 
