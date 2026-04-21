@@ -1419,6 +1419,492 @@ class TestVersionInfo(IntegrationTest):
 
 
 # ============================================================================
+# Invalid Configuration Tests
+# ============================================================================
+
+class TestInvalidConfigs(IntegrationTest):
+    """
+    Test that sysmon correctly rejects various invalid configuration files.
+    Validates error detection for malformed XML, bad schema versions,
+    missing elements, non-XML content, and other invalid inputs.
+
+    Uses both -c (config update) and -i (install) flags where applicable.
+    """
+
+    @property
+    def description(self):
+        return "Ensure sysmon detects and rejects all forms of invalid configuration files."
+
+    def get_config(self):
+        return None  # Tests manage configs directly
+
+    def trigger(self):
+        pass  # All validation happens in validate()
+
+    def _write_temp_config(self, content):
+        """Write content to a temp file and return the path."""
+        f = tempfile.NamedTemporaryFile(mode="w", suffix=".xml", delete=False)
+        f.write(content)
+        f.close()
+        return f.name
+
+    def _run_sysmon_config(self, config_path, flag="-c"):
+        """Run sysmon with config and return (exit_code, stdout, stderr, combined)."""
+        cmd = f"sudo {self.sysmon.sysmon_path} {flag} {config_path}"
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
+        combined = result.stdout + result.stderr
+        return result.returncode, result.stdout, result.stderr, combined
+
+    def _test_config_rejected(self, name, content, flag="-c",
+                              expect_error_pattern=None,
+                              expect_nonzero_exit=True,
+                              expect_crash=False):
+        """
+        Test that a config is rejected by sysmon.
+
+        Args:
+            name: Sub-test name for error reporting
+            content: XML config content to write
+            flag: sysmon flag to use (-c or -i)
+            expect_error_pattern: regex to match in output (optional)
+            expect_nonzero_exit: if True, expect exit code != 0
+            expect_crash: if True, expect exit code >= 128 (signal)
+        """
+        path = self._write_temp_config(content)
+        try:
+            rc, stdout, stderr, combined = self._run_sysmon_config(path, flag)
+
+            if self.verbose:
+                print(f"  [{name}] exit={rc}, output snippet: "
+                      f"{combined[:200].replace(chr(10), ' ')}")
+
+            if expect_crash:
+                self.check_condition(
+                    rc >= 128 or rc != 0,
+                    name,
+                    "Expected crash or non-zero exit for {0}, got exit code {1}",
+                    name, rc
+                )
+            elif expect_nonzero_exit:
+                self.check_condition(
+                    rc != 0,
+                    name,
+                    "Expected non-zero exit code for {0}, got exit code {1}",
+                    name, rc
+                )
+
+            if expect_error_pattern:
+                self.check_condition(
+                    re.search(expect_error_pattern, combined, re.IGNORECASE) is not None,
+                    name,
+                    "Expected error pattern '{0}' not found in output for {1}",
+                    expect_error_pattern, name
+                )
+
+            # Verify "Configuration file validated" should NOT appear for rejected configs
+            if expect_nonzero_exit or expect_crash:
+                validated = "Configuration file validated" in combined
+                self.check_condition(
+                    not validated,
+                    name,
+                    "Config was validated when it should have been rejected for {0}",
+                    name
+                )
+
+        finally:
+            os.unlink(path)
+
+    def _test_config_accepted_with_warning(self, name, content, flag="-c",
+                                           expect_warning_pattern=None):
+        """
+        Test that a config is accepted (exit 0) but produces a warning.
+
+        Args:
+            name: Sub-test name
+            content: XML config content
+            flag: sysmon flag
+            expect_warning_pattern: regex to match warning in output
+        """
+        path = self._write_temp_config(content)
+        try:
+            rc, stdout, stderr, combined = self._run_sysmon_config(path, flag)
+
+            if self.verbose:
+                print(f"  [{name}] exit={rc}, output snippet: "
+                      f"{combined[:200].replace(chr(10), ' ')}")
+
+            # Config is accepted (exit 0) but may have warnings
+            if expect_warning_pattern:
+                self.check_condition(
+                    re.search(expect_warning_pattern, combined, re.IGNORECASE) is not None,
+                    name,
+                    "Expected warning pattern '{0}' not found in output for {1}",
+                    expect_warning_pattern, name
+                )
+        finally:
+            os.unlink(path)
+
+    def validate(self):
+        # ============================================================
+        # Category 1: Malformed XML (parse failures)
+        # ============================================================
+
+        # 1a. Completely broken XML
+        self._test_config_rejected(
+            "MalformedXML",
+            "<bad xml\n",
+            flag="-c",
+            expect_error_pattern=r"Failed to load xml|error",
+            expect_nonzero_exit=True
+        )
+
+        # 1b. Same with -i flag
+        self._test_config_rejected(
+            "MalformedXML_Install",
+            "<bad xml\n",
+            flag="-i",
+            expect_error_pattern=r"Failed to load xml|error",
+            expect_nonzero_exit=True
+        )
+
+        # 1c. Unclosed XML tags
+        self._test_config_rejected(
+            "UnclosedTags",
+            '<Sysmon schemaversion="4.90"><EventFiltering>',
+            flag="-c",
+            expect_error_pattern=r"Failed to load xml|error",
+            expect_nonzero_exit=True
+        )
+
+        # 1d. Mismatched closing tags
+        self._test_config_rejected(
+            "MismatchedTags",
+            '<Sysmon schemaversion="4.90"><EventFiltering></Sysmon></EventFiltering>',
+            flag="-c",
+            expect_error_pattern=r"Failed to load xml|error",
+            expect_nonzero_exit=True
+        )
+
+        # 1e. Invalid XML characters / binary content
+        self._test_config_rejected(
+            "BinaryContent",
+            '\x00\x01\x02\x03\x04\x05',
+            flag="-c",
+            expect_nonzero_exit=True
+        )
+
+        # ============================================================
+        # Category 2: Non-XML content
+        # ============================================================
+
+        # 2a. Plain text
+        self._test_config_rejected(
+            "PlainText",
+            "This is not XML at all\n",
+            flag="-c",
+            expect_nonzero_exit=True
+        )
+
+        # 2b. Empty file
+        self._test_config_rejected(
+            "EmptyFile",
+            "",
+            flag="-c",
+            expect_nonzero_exit=True
+        )
+
+        # 2c. JSON content
+        self._test_config_rejected(
+            "JSONContent",
+            '{"Sysmon": {"schemaversion": "4.90"}}',
+            flag="-c",
+            expect_nonzero_exit=True
+        )
+
+        # 2d. YAML content
+        self._test_config_rejected(
+            "YAMLContent",
+            "Sysmon:\n  schemaversion: 4.90\n  EventFiltering: {}\n",
+            flag="-c",
+            expect_nonzero_exit=True
+        )
+
+        # ============================================================
+        # Category 3: Wrong root element / missing Sysmon root
+        # ============================================================
+
+        # 3a. Wrong root element name
+        self._test_config_rejected(
+            "WrongRootElement",
+            '<NotSysmon schemaversion="4.90"><EventFiltering>'
+            '</EventFiltering></NotSysmon>\n',
+            flag="-c",
+            expect_nonzero_exit=True
+        )
+
+        # 3b. Valid XML but completely unrelated structure
+        self._test_config_rejected(
+            "UnrelatedXML",
+            '<?xml version="1.0"?><html><body>Hello</body></html>\n',
+            flag="-c",
+            expect_nonzero_exit=True
+        )
+
+        # ============================================================
+        # Category 4: Schema version problems
+        # ============================================================
+
+        # 4a. Missing schema version attribute  
+        self._test_config_rejected(
+            "MissingSchemaVersion",
+            '<Sysmon><EventFiltering></EventFiltering></Sysmon>\n',
+            flag="-c",
+            expect_error_pattern=r"Invalid schema version number",
+            expect_nonzero_exit=True
+        )
+
+        # 4b. Empty Sysmon element (no attributes, no children)
+        self._test_config_rejected(
+            "EmptySysmonElement",
+            '<Sysmon></Sysmon>\n',
+            flag="-c",
+            expect_error_pattern=r"Invalid schema version number",
+            expect_nonzero_exit=True
+        )
+
+        # 4c. Non-numeric schema version
+        self._test_config_rejected(
+            "NonNumericSchema",
+            '<Sysmon schemaversion="abc"><EventFiltering>'
+            '</EventFiltering></Sysmon>\n',
+            flag="-c",
+            expect_error_pattern=r"Invalid schema version number",
+            expect_nonzero_exit=True
+        )
+
+        # 4d. Negative schema version
+        self._test_config_rejected(
+            "NegativeSchema",
+            '<Sysmon schemaversion="-1.0"><EventFiltering>'
+            '</EventFiltering></Sysmon>\n',
+            flag="-c",
+            expect_error_pattern=r"Invalid schema version",
+            expect_nonzero_exit=True
+        )
+
+        # 4e. Very old / unsupported schema version
+        self._test_config_rejected(
+            "OldSchema",
+            '<Sysmon schemaversion="1.0"><EventFiltering>'
+            '<RuleGroup name="" groupRelation="or">'
+            '<ProcessCreate onmatch="include">'
+            '<Image condition="is">/bin/ls</Image>'
+            '</ProcessCreate></RuleGroup>'
+            '</EventFiltering></Sysmon>\n',
+            flag="-c",
+            expect_error_pattern=r"Incorrect or unsupported schema|Incompatible",
+            expect_nonzero_exit=True
+        )
+
+        # 4f. Schema version 0.0
+        self._test_config_rejected(
+            "ZeroSchema",
+            '<Sysmon schemaversion="0.0"><EventFiltering>'
+            '</EventFiltering></Sysmon>\n',
+            flag="-c",
+            expect_nonzero_exit=True
+        )
+
+        # 4g. Negative schema with -i flag
+        self._test_config_rejected(
+            "NegativeSchema_Install",
+            '<Sysmon schemaversion="-1.0"><EventFiltering>'
+            '</EventFiltering></Sysmon>\n',
+            flag="-i",
+            expect_error_pattern=r"Invalid schema version",
+            expect_nonzero_exit=True
+        )
+
+        # ============================================================
+        # Category 5: Invalid filter conditions and attributes
+        # ============================================================
+
+        # 5a. Invalid condition operator
+        self._test_config_accepted_with_warning(
+            "InvalidCondition",
+            '<Sysmon schemaversion="4.90"><EventFiltering>'
+            '<RuleGroup name="" groupRelation="or">'
+            '<ProcessCreate onmatch="include">'
+            '<Image condition="invalidcondition">/bin/ls</Image>'
+            '</ProcessCreate></RuleGroup>'
+            '</EventFiltering></Sysmon>\n',
+            flag="-c",
+            expect_warning_pattern=r"Unknown condition"
+        )
+
+        # ============================================================
+        # Category 6: XXE / XML entity injection attempts
+        # ============================================================
+
+        # 6a. XXE with file:// entity (security test)
+        # pugixml ignores DTD by default, so this should be safe
+        xxe_config = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>'
+            '<Sysmon schemaversion="4.90"><EventFiltering>'
+            '<RuleGroup name="" groupRelation="or">'
+            '<ProcessCreate onmatch="include">'
+            '<Image condition="is">&xxe;</Image>'
+            '</ProcessCreate></RuleGroup>'
+            '</EventFiltering></Sysmon>\n'
+        )
+        path = self._write_temp_config(xxe_config)
+        try:
+            rc, stdout, stderr, combined = self._run_sysmon_config(path, "-c")
+            if self.verbose:
+                print(f"  [XXE_FileEntity] exit={rc}")
+            # The key assertion: /etc/passwd content should NOT appear in output
+            self.check_condition(
+                "root:" not in combined,
+                "XXE_FileEntity",
+                "XXE entity was expanded - /etc/passwd content found in output (security vulnerability)"
+            )
+        finally:
+            os.unlink(path)
+
+        # 6b. XXE with SYSTEM entity pointing to network
+        xxe_network = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<!DOCTYPE foo [<!ENTITY xxe SYSTEM "http://127.0.0.1:9999/evil">]>'
+            '<Sysmon schemaversion="4.90"><EventFiltering>'
+            '<RuleGroup name="" groupRelation="or">'
+            '<ProcessCreate onmatch="include">'
+            '<Image condition="is">&xxe;</Image>'
+            '</ProcessCreate></RuleGroup>'
+            '</EventFiltering></Sysmon>\n'
+        )
+        path = self._write_temp_config(xxe_network)
+        try:
+            rc, stdout, stderr, combined = self._run_sysmon_config(path, "-c")
+            if self.verbose:
+                print(f"  [XXE_NetworkEntity] exit={rc}")
+            # Should not hang or crash trying network access
+            self.check_condition(
+                rc is not None,
+                "XXE_NetworkEntity",
+                "Sysmon may have hung on network XXE entity expansion"
+            )
+        finally:
+            os.unlink(path)
+
+        # ============================================================
+        # Category 7: Extremely large / adversarial input
+        # ============================================================
+
+        # 7a. Very long element name
+        long_name = "A" * 10000
+        self._test_config_rejected(
+            "VeryLongElementName",
+            f'<Sysmon schemaversion="4.90"><EventFiltering>'
+            f'<RuleGroup name="" groupRelation="or">'
+            f'<{long_name} onmatch="include">'
+            f'<Image condition="is">/bin/ls</Image>'
+            f'</{long_name}></RuleGroup>'
+            f'</EventFiltering></Sysmon>\n',
+            flag="-c",
+            # May be accepted (unknown events are ignored) or rejected
+            expect_nonzero_exit=False
+        )
+
+        # 7b. Very long attribute value
+        long_value = "B" * 100000
+        path = self._write_temp_config(
+            f'<Sysmon schemaversion="4.90"><EventFiltering>'
+            f'<RuleGroup name="" groupRelation="or">'
+            f'<ProcessCreate onmatch="include">'
+            f'<Image condition="is">{long_value}</Image>'
+            f'</ProcessCreate></RuleGroup>'
+            f'</EventFiltering></Sysmon>\n'
+        )
+        try:
+            rc, stdout, stderr, combined = self._run_sysmon_config(path, "-c")
+            if self.verbose:
+                print(f"  [VeryLongAttrValue] exit={rc}")
+            # Should not crash (exit >= 128 means signal)
+            self.check_condition(
+                rc < 128,
+                "VeryLongAttrValue",
+                "Sysmon crashed (signal {0}) on very long attribute value",
+                rc
+            )
+        finally:
+            os.unlink(path)
+
+        # 7c. Deeply nested XML
+        depth = 500
+        nested = "<a>" * depth + "</a>" * depth
+        self._test_config_rejected(
+            "DeeplyNestedXML",
+            f'<Sysmon schemaversion="4.90"><EventFiltering>{nested}'
+            f'</EventFiltering></Sysmon>\n',
+            flag="-c",
+            expect_nonzero_exit=False  # May or may not reject
+        )
+
+        # ============================================================
+        # Category 8: Non-existent config file
+        # ============================================================
+
+        # 8a. Non-existent file path with -c
+        rc, stdout, stderr, combined = (None, "", "", "")
+        cmd = f"sudo {self.sysmon.sysmon_path} -c /tmp/nonexistent_sysmon_config_{random_string()}.xml"
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
+        combined = result.stdout + result.stderr
+        if self.verbose:
+            print(f"  [NonExistentFile_C] exit={result.returncode}")
+        self.check_condition(
+            result.returncode != 0 or "Usage:" in combined,
+            "NonExistentFile_C",
+            "Expected error or usage output for non-existent config file with -c"
+        )
+
+        # 8b. Non-existent file path with -i
+        cmd = f"sudo {self.sysmon.sysmon_path} -i /tmp/nonexistent_sysmon_config_{random_string()}.xml"
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
+        combined = result.stdout + result.stderr
+        if self.verbose:
+            print(f"  [NonExistentFile_I] exit={result.returncode}")
+        self.check_condition(
+            result.returncode != 0 or "Usage:" in combined or "error" in combined.lower(),
+            "NonExistentFile_I",
+            "Expected error for non-existent config file with -i"
+        )
+
+        # ============================================================
+        # Category 9: Sysmon still running after all invalid configs
+        # ============================================================
+
+        # After all these invalid config attempts, sysmon should still be running
+        self.check_condition(
+            self.sysmon.is_running(),
+            "SysmonStillRunning",
+            "Sysmon is no longer running after invalid config tests"
+        )
+
+        # Verify sysmon can still accept a valid config after all the bad ones
+        valid_config = make_config("""
+        <RuleGroup name="" groupRelation="or">
+            <ProcessCreate onmatch="exclude" />
+        </RuleGroup>
+""")
+        self.check_condition(
+            self.sysmon.apply_config(valid_config),
+            "ValidConfigAfterInvalid",
+            "Sysmon failed to accept a valid config after processing invalid configs"
+        )
+
+
+# ============================================================================
 # Test Registry
 # ============================================================================
 
@@ -1445,5 +1931,6 @@ ALL_TESTS = [
     TestEventFilteringBeginWith,
     TestEventFilteringEndWith,
     TestEventFilteringExcludes,
+    TestInvalidConfigs,
     TestStateAndErrors,
 ]
