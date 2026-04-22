@@ -1,0 +1,17 @@
+<Sysmon schemaversion="4.90">
+<EventFiltering>
+  <RuleGroup name="complex_and" groupRelation="and">
+    <ProcessCreate onmatch="include">
+      <Image condition="begin with">/usr</Image>
+      <CommandLine condition="contains">test</CommandLine>
+      <User condition="is not">nobody</User>
+    </ProcessCreate>
+  </RuleGroup>
+  <RuleGroup name="complex_or" groupRelation="or">
+    <ProcessCreate onmatch="exclude">
+      <Image condition="is">/usr/bin/sshd</Image>
+      <Image condition="is">/usr/bin/cron</Image>
+    </ProcessCreate>
+  </RuleGroup>
+</EventFiltering>
+</Sysmon>

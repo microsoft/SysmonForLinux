@@ -1,0 +1,5 @@
+Rule configuration (version 4.90):
+ - ProcessCreate                      onmatch: include   combine rules using 'Or'
+	Compound Rule DetectSuspiciousProcess   combine using And
+	    Image                          filter: begin with   value: '/tmp'
+	    CommandLine                    filter: contains     value: 'suspicious'

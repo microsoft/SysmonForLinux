@@ -1,0 +1,9 @@
+Rule configuration (version 4.90):
+ - NetworkConnect                     onmatch: include   combine rules using 'Or'
+	DestinationPort                filter: is           value: '80'
+	DestinationPort                filter: is           value: '443'
+	DestinationPort                filter: is           value: '8080'
+ - FileCreate                         onmatch: include   combine rules using 'Or'
+	TargetFilename                 filter: end with     value: '.log'
+ - FileDelete                         onmatch: include   combine rules using 'Or'
+	TargetFilename                 filter: contains     value: '/tmp'

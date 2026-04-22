@@ -1,0 +1,22 @@
+<Sysmon schemaversion="4.90">
+<EventFiltering>
+  <RuleGroup name="all_conditions" groupRelation="or">
+    <ProcessCreate onmatch="include">
+      <Image condition="is">/usr/bin/ls</Image>
+      <Image condition="is not">/usr/bin/cat</Image>
+      <CommandLine condition="contains">test_marker</CommandLine>
+      <CommandLine condition="contains any">marker_a;marker_b;marker_c</CommandLine>
+      <CommandLine condition="contains all">part1;part2</CommandLine>
+      <CommandLine condition="is any">exact_a;exact_b</CommandLine>
+      <CommandLine condition="excludes">excluded_word</CommandLine>
+      <CommandLine condition="excludes any">bad_a;bad_b</CommandLine>
+      <CommandLine condition="excludes all">all_bad_a;all_bad_b</CommandLine>
+      <Image condition="begin with">/usr/bin</Image>
+      <Image condition="end with">ls</Image>
+      <Image condition="not begin with">/opt</Image>
+      <Image condition="not end with">.sh</Image>
+      <User condition="is">root</User>
+    </ProcessCreate>
+  </RuleGroup>
+</EventFiltering>
+</Sysmon>

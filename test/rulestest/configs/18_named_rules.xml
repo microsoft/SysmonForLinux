@@ -1,0 +1,12 @@
+<Sysmon schemaversion="4.90">
+<EventFiltering>
+  <RuleGroup name="rule_with_name" groupRelation="or">
+    <ProcessCreate onmatch="include">
+      <Rule name="DetectSuspiciousProcess" groupRelation="and">
+        <Image condition="begin with">/tmp</Image>
+        <CommandLine condition="contains">suspicious</CommandLine>
+      </Rule>
+    </ProcessCreate>
+  </RuleGroup>
+</EventFiltering>
+</Sysmon>

@@ -1,0 +1,14 @@
+<Sysmon schemaversion="4.90">
+<EventFiltering>
+  <RuleGroup name="" groupRelation="or">
+    <ProcessCreate onmatch="include">
+      <CommandLine condition="less than">100</CommandLine>
+    </ProcessCreate>
+  </RuleGroup>
+  <RuleGroup name="" groupRelation="or">
+    <NetworkConnect onmatch="include">
+      <DestinationPort condition="more than">1024</DestinationPort>
+    </NetworkConnect>
+  </RuleGroup>
+</EventFiltering>
+</Sysmon>

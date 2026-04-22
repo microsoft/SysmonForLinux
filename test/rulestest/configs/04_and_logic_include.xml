@@ -1,0 +1,10 @@
+<Sysmon schemaversion="4.90">
+<EventFiltering>
+  <RuleGroup name="and_include" groupRelation="and">
+    <ProcessCreate onmatch="include">
+      <Image condition="end with">echo</Image>
+      <CommandLine condition="contains">MARKER_AND</CommandLine>
+    </ProcessCreate>
+  </RuleGroup>
+</EventFiltering>
+</Sysmon>

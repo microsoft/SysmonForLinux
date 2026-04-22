@@ -1,0 +1,14 @@
+<Sysmon schemaversion="4.90">
+<EventFiltering>
+  <RuleGroup name="" groupRelation="or">
+    <ProcessCreate onmatch="include">
+      <Image condition="is">/usr/bin/ls</Image>
+    </ProcessCreate>
+  </RuleGroup>
+  <RuleGroup name="" groupRelation="or">
+    <ProcessCreate onmatch="exclude">
+      <CommandLine condition="contains">harmless</CommandLine>
+    </ProcessCreate>
+  </RuleGroup>
+</EventFiltering>
+</Sysmon>
