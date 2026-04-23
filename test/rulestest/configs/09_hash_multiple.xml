@@ -1,0 +1,8 @@
+<Sysmon schemaversion="4.90">
+<HashAlgorithms>SHA1,SHA256,MD5,IMPHASH</HashAlgorithms>
+<EventFiltering>
+  <RuleGroup name="" groupRelation="or">
+    <ProcessCreate onmatch="exclude" />
+  </RuleGroup>
+</EventFiltering>
+</Sysmon>

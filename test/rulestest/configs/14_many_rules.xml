@@ -1,0 +1,28 @@
+<Sysmon schemaversion="4.90">
+<EventFiltering>
+  <RuleGroup name="many_rules" groupRelation="or">
+    <ProcessCreate onmatch="include">
+      <Image condition="is">/usr/bin/ls</Image>
+      <Image condition="is">/usr/bin/cat</Image>
+      <Image condition="is">/usr/bin/echo</Image>
+      <Image condition="is">/usr/bin/grep</Image>
+      <Image condition="is">/usr/bin/find</Image>
+      <Image condition="is">/usr/bin/sort</Image>
+      <Image condition="is">/usr/bin/wc</Image>
+      <Image condition="is">/usr/bin/head</Image>
+      <Image condition="is">/usr/bin/tail</Image>
+      <Image condition="is">/usr/bin/awk</Image>
+      <Image condition="is">/usr/bin/sed</Image>
+      <Image condition="is">/usr/bin/cut</Image>
+      <Image condition="is">/usr/bin/tr</Image>
+      <Image condition="is">/usr/bin/tee</Image>
+      <Image condition="is">/usr/bin/diff</Image>
+      <Image condition="begin with">/opt/custom/bin</Image>
+      <CommandLine condition="contains">sudo</CommandLine>
+      <CommandLine condition="contains">chmod</CommandLine>
+      <CommandLine condition="contains">chown</CommandLine>
+      <User condition="is">root</User>
+    </ProcessCreate>
+  </RuleGroup>
+</EventFiltering>
+</Sysmon>

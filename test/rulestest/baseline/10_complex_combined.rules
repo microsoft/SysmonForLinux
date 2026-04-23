@@ -1,0 +1,8 @@
+Rule configuration (version 4.90):
+ - ProcessCreate                      onmatch: include   combine rules using 'And'
+	Image                          filter: begin with   value: '/usr'
+	CommandLine                    filter: contains     value: 'test'
+	User                           filter: is not       value: 'nobody'
+ - ProcessCreate                      onmatch: exclude   combine rules using 'Or'
+	Image                          filter: is           value: '/usr/bin/sshd'
+	Image                          filter: is           value: '/usr/bin/cron'

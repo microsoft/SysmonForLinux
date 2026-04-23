@@ -1,0 +1,21 @@
+<Sysmon schemaversion="4.90">
+<EventFiltering>
+  <RuleGroup name="" groupRelation="or">
+    <FileDelete onmatch="include">
+      <TargetFilename condition="contains">/tmp</TargetFilename>
+    </FileDelete>
+  </RuleGroup>
+  <RuleGroup name="" groupRelation="or">
+    <FileCreate onmatch="include">
+      <TargetFilename condition="end with">.log</TargetFilename>
+    </FileCreate>
+  </RuleGroup>
+  <RuleGroup name="" groupRelation="or">
+    <NetworkConnect onmatch="include">
+      <DestinationPort condition="is">80</DestinationPort>
+      <DestinationPort condition="is">443</DestinationPort>
+      <DestinationPort condition="is">8080</DestinationPort>
+    </NetworkConnect>
+  </RuleGroup>
+</EventFiltering>
+</Sysmon>

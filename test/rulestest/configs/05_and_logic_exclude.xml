@@ -1,0 +1,10 @@
+<Sysmon schemaversion="4.90">
+<EventFiltering>
+  <RuleGroup name="and_exclude" groupRelation="and">
+    <ProcessCreate onmatch="exclude">
+      <Image condition="end with">echo</Image>
+      <CommandLine condition="contains">MARKER_EXCLUDE</CommandLine>
+    </ProcessCreate>
+  </RuleGroup>
+</EventFiltering>
+</Sysmon>

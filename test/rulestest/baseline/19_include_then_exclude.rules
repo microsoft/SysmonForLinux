@@ -1,0 +1,5 @@
+Rule configuration (version 4.90):
+ - ProcessCreate                      onmatch: include   combine rules using 'Or'
+	Image                          filter: is           value: '/usr/bin/ls'
+ - ProcessCreate                      onmatch: exclude   combine rules using 'Or'
+	CommandLine                    filter: contains     value: 'harmless'

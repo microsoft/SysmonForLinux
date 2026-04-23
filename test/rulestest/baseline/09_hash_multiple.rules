@@ -1,0 +1,2 @@
+Rule configuration (version 4.90):
+ - ProcessCreate                      onmatch: exclude   combine rules using 'Or'

@@ -1,0 +1,16 @@
+<Sysmon schemaversion="4.90">
+<EventFiltering>
+  <RuleGroup name="or_include" groupRelation="or">
+    <ProcessCreate onmatch="include">
+      <Image condition="is">/usr/bin/ls</Image>
+      <Image condition="is">/usr/bin/cat</Image>
+      <Image condition="is">/usr/bin/echo</Image>
+    </ProcessCreate>
+  </RuleGroup>
+  <RuleGroup name="or_exclude" groupRelation="or">
+    <ProcessCreate onmatch="exclude">
+      <Image condition="is">/usr/bin/grep</Image>
+    </ProcessCreate>
+  </RuleGroup>
+</EventFiltering>
+</Sysmon>

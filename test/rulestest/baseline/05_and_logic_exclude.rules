@@ -1,0 +1,4 @@
+Rule configuration (version 4.90):
+ - ProcessCreate                      onmatch: exclude   combine rules using 'And'
+	Image                          filter: end with     value: 'echo'
+	CommandLine                    filter: contains     value: 'MARKER_EXCLUDE'

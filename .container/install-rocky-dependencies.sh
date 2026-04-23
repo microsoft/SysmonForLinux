@@ -21,7 +21,6 @@ sudo yum install \
        rpm-build \
        json-glib-devel \
        python3 \
-       libxml2-devel \
        glibc-devel.i686 \
        gtest-devel \
        gmock \

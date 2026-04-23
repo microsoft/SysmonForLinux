@@ -1,0 +1,34 @@
+<Sysmon schemaversion="4.90">
+<EventFiltering>
+  <RuleGroup name="" groupRelation="or">
+    <ProcessCreate onmatch="include">
+      <Image condition="is">/usr/bin/ls</Image>
+    </ProcessCreate>
+  </RuleGroup>
+  <RuleGroup name="" groupRelation="or">
+    <ProcessTerminate onmatch="include">
+      <Image condition="is">/usr/bin/ls</Image>
+    </ProcessTerminate>
+  </RuleGroup>
+  <RuleGroup name="" groupRelation="or">
+    <FileCreate onmatch="include">
+      <TargetFilename condition="contains">/tmp/test</TargetFilename>
+    </FileCreate>
+  </RuleGroup>
+  <RuleGroup name="" groupRelation="or">
+    <NetworkConnect onmatch="include">
+      <DestinationPort condition="is">443</DestinationPort>
+    </NetworkConnect>
+  </RuleGroup>
+  <RuleGroup name="" groupRelation="or">
+    <ProcessAccess onmatch="include">
+      <TargetImage condition="is">/usr/bin/ls</TargetImage>
+    </ProcessAccess>
+  </RuleGroup>
+  <RuleGroup name="" groupRelation="or">
+    <RawAccessRead onmatch="include">
+      <Device condition="is">/dev/sda</Device>
+    </RawAccessRead>
+  </RuleGroup>
+</EventFiltering>
+</Sysmon>

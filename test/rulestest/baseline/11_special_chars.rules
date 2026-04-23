@@ -1,0 +1,3 @@
+Rule configuration (version 4.90):
+ - ProcessCreate                      onmatch: include   combine rules using 'Or'
+	CommandLine                    filter: contains     value: 'Special chars: & < > " ''

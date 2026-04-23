@@ -226,6 +226,9 @@ TEST( Process, ProcessName )
 
     for ( auto CONST test : pTests ) {
 
+        cmdline = NULL;
+        cmdline_copy = NULL;
+
         if (test.cmdline != NULL) {
             // expand cmdline string into array of strings
             numspaces = 0;

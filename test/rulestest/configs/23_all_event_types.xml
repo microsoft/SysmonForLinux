@@ -1,0 +1,113 @@
+<Sysmon schemaversion="4.90">
+  <HashAlgorithms>SHA256</HashAlgorithms>
+  <EventFiltering>
+    <!-- Linux-supported events with rules -->
+    <RuleGroup name="ProcessCreate_Rules" groupRelation="or">
+      <ProcessCreate onmatch="include">
+        <Image condition="end with">/sshd</Image>
+        <Image condition="end with">/bash</Image>
+      </ProcessCreate>
+    </RuleGroup>
+
+    <RuleGroup name="FileCreateTime_Rules" groupRelation="or">
+      <FileCreateTime onmatch="exclude">
+        <Image condition="contains">/tmp/</Image>
+      </FileCreateTime>
+    </RuleGroup>
+
+    <RuleGroup name="NetworkConnect_Rules" groupRelation="or">
+      <NetworkConnect onmatch="include">
+        <DestinationPort condition="is">443</DestinationPort>
+        <DestinationPort condition="is">80</DestinationPort>
+      </NetworkConnect>
+    </RuleGroup>
+
+    <RuleGroup name="ProcessTerminate_Rules" groupRelation="or">
+      <ProcessTerminate onmatch="exclude">
+      </ProcessTerminate>
+    </RuleGroup>
+
+    <RuleGroup name="RawAccessRead_Rules" groupRelation="or">
+      <RawAccessRead onmatch="include">
+        <Device condition="contains">/dev/sda</Device>
+      </RawAccessRead>
+    </RuleGroup>
+
+    <RuleGroup name="ProcessAccess_Rules" groupRelation="and">
+      <ProcessAccess onmatch="include">
+        <SourceImage condition="end with">/gdb</SourceImage>
+      </ProcessAccess>
+    </RuleGroup>
+
+    <RuleGroup name="FileCreate_Rules" groupRelation="or">
+      <FileCreate onmatch="include">
+        <TargetFilename condition="contains">/etc/</TargetFilename>
+        <TargetFilename condition="end with">.conf</TargetFilename>
+      </FileCreate>
+    </RuleGroup>
+
+    <RuleGroup name="DnsQuery_Rules" groupRelation="or">
+      <DnsQuery onmatch="exclude">
+        <QueryName condition="end with">.local</QueryName>
+      </DnsQuery>
+    </RuleGroup>
+
+    <RuleGroup name="FileDelete_Rules" groupRelation="or">
+      <FileDelete onmatch="include">
+        <TargetFilename condition="contains">/etc/</TargetFilename>
+      </FileDelete>
+    </RuleGroup>
+
+    <RuleGroup name="FileDeleteDetected_Rules" groupRelation="or">
+      <FileDeleteDetected onmatch="exclude">
+        <TargetFilename condition="contains">/tmp/</TargetFilename>
+      </FileDeleteDetected>
+    </RuleGroup>
+
+    <!-- Windows-only events (disabled but still parsed by rule engine) -->
+    <RuleGroup name="WindowsOnly_Disabled" groupRelation="or">
+      <DriverLoad onmatch="include">
+      </DriverLoad>
+    </RuleGroup>
+
+    <RuleGroup name="WindowsOnly_Disabled2" groupRelation="or">
+      <ImageLoad onmatch="include">
+      </ImageLoad>
+    </RuleGroup>
+
+    <RuleGroup name="WindowsOnly_Disabled3" groupRelation="or">
+      <CreateRemoteThread onmatch="include">
+      </CreateRemoteThread>
+    </RuleGroup>
+
+    <RuleGroup name="WindowsOnly_Disabled4" groupRelation="or">
+      <RegistryEvent onmatch="include">
+      </RegistryEvent>
+    </RuleGroup>
+
+    <RuleGroup name="WindowsOnly_Disabled5" groupRelation="or">
+      <FileCreateStreamHash onmatch="include">
+      </FileCreateStreamHash>
+    </RuleGroup>
+
+    <RuleGroup name="WindowsOnly_Disabled6" groupRelation="or">
+      <PipeEvent onmatch="include">
+      </PipeEvent>
+    </RuleGroup>
+
+    <RuleGroup name="WindowsOnly_Disabled7" groupRelation="or">
+      <WmiEvent onmatch="include">
+      </WmiEvent>
+    </RuleGroup>
+
+    <RuleGroup name="WindowsOnly_Disabled8" groupRelation="or">
+      <ClipboardChange onmatch="include">
+      </ClipboardChange>
+    </RuleGroup>
+
+    <RuleGroup name="WindowsOnly_Disabled9" groupRelation="or">
+      <ProcessTampering onmatch="include">
+      </ProcessTampering>
+    </RuleGroup>
+  </EventFiltering>
+</Sysmon>

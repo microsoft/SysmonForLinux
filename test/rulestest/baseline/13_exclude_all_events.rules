@@ -1,0 +1,5 @@
+Rule configuration (version 4.90):
+ - ProcessCreate                      onmatch: exclude   combine rules using 'Or'
+ - NetworkConnect                     onmatch: exclude   combine rules using 'Or'
+ - ProcessTerminate                   onmatch: exclude   combine rules using 'Or'
+ - FileCreate                         onmatch: exclude   combine rules using 'Or'

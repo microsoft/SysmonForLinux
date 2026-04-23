@@ -1,0 +1,5 @@
+Rule configuration (version 4.90):
+ - ProcessCreate                      onmatch: include   combine rules using 'Or'
+	CommandLine                    filter: less than    value: '100'
+ - NetworkConnect                     onmatch: include   combine rules using 'Or'
+	DestinationPort                filter: more than    value: '1024'

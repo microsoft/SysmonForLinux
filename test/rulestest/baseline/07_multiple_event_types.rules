@@ -1,0 +1,13 @@
+Rule configuration (version 4.90):
+ - ProcessCreate                      onmatch: include   combine rules using 'Or'
+	Image                          filter: is           value: '/usr/bin/ls'
+ - NetworkConnect                     onmatch: include   combine rules using 'Or'
+	DestinationPort                filter: is           value: '443'
+ - ProcessTerminate                   onmatch: include   combine rules using 'Or'
+	Image                          filter: is           value: '/usr/bin/ls'
+ - RawAccessRead                      onmatch: include   combine rules using 'Or'
+	Device                         filter: is           value: '/dev/sda'
+ - ProcessAccess                      onmatch: include   combine rules using 'Or'
+	TargetImage                    filter: is           value: '/usr/bin/ls'
+ - FileCreate                         onmatch: include   combine rules using 'Or'
+	TargetFilename                 filter: contains     value: '/tmp/test'
