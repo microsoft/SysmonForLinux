@@ -685,7 +685,7 @@ def sha256_file(filepath: str) -> str:
 def sha1_file(filepath: str) -> str:
     """Compute SHA1 hash of a file."""
     import hashlib
-    h = hashlib.sha1()
+    h = hashlib.sha1()     # CodeQL [SM02167] SHA1 is still used for backwards compatability in Sysmon
     with open(filepath, "rb") as f:
         for chunk in iter(lambda: f.read(8192), b""):
             h.update(chunk)
