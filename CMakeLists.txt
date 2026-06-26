@@ -146,7 +146,7 @@ ExternalProject_Add(openssl
                     GIT_TAG openssl-3.6.2
                     PREFIX ./openssl
                     CONFIGURE_COMMAND cd ../openssl && ./Configure
-                    BUILD_COMMAND cd ../openssl && make && rm -rf ${PROJECT_BINARY_DIR}/openssl/src/openssl/cloudflare-quiche
+                    BUILD_COMMAND cd ../openssl && make && rm -rf ${PROJECT_BINARY_DIR}/openssl/src/openssl/cloudflare-quiche && rm -rf ${PROJECT_BINARY_DIR}/openssl/src/openssl/pyca-cryptography
                     INSTALL_COMMAND ""
                     UPDATE_COMMAND ""
                    )
