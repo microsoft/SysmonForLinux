@@ -25,8 +25,8 @@
 #################################################################################
 
 
-if [ "$5" = "" ]; then
-    echo "Usage: $0 <SourceDir> <BinaryDir> <package name> <package version> <package release> <PackageType>"
+if [ "$8" = "" ]; then
+    echo "Usage: $0 <SourceDir> <BinaryDir> <package name> <package version> <package release> <PackageType> <DebArch> <RpmArch>"
     exit 1
 fi
 
@@ -37,8 +37,10 @@ PACKAGE_NAME=$3
 PACKAGE_VER=$4
 PACKAGE_REL=$5
 PACKAGE_TYPE=$6
+DEB_ARCH=$7
+RPM_ARCH=$8
 
-DEB_PACKAGE_NAME="${PACKAGE_NAME}_${PACKAGE_VER}_amd64"
+DEB_PACKAGE_NAME="${PACKAGE_NAME}_${PACKAGE_VER}_${DEB_ARCH}"
 RPM_PACKAGE_NAME="${PACKAGE_NAME}-${PACKAGE_VER}-${PACKAGE_REL}"
 
 if [ "$PACKAGE_TYPE" = "deb" ]; then
@@ -68,7 +70,7 @@ if [ "$PACKAGE_TYPE" = "deb" ]; then
         RET=1
     fi
 
-    exit 0
+    exit $RET
 fi
 
 if [ "$PACKAGE_TYPE" = "rpm" ]; then
@@ -87,9 +89,9 @@ if [ "$PACKAGE_TYPE" = "rpm" ]; then
     # make the rpm
     if [ "$RPMBUILD" != "" ]; then
         cd "${PROJECT_BINARY_DIR}/rpm/${RPM_PACKAGE_NAME}"
-        "$RPMBUILD" --define "_topdir `pwd`" -v -bb "SPECS/${RPM_PACKAGE_NAME}.spec"
+        "$RPMBUILD" --target "${RPM_ARCH}" --define "_topdir `pwd`" -v -bb "SPECS/${RPM_PACKAGE_NAME}.spec"
         RET=$?
-        cp RPMS/x86_64/*.rpm ..
+        cp "RPMS/${RPM_ARCH}/"*.rpm ..
     else
         echo "No rpmbuild found"
         RET=1

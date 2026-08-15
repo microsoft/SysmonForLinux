@@ -78,11 +78,15 @@ static inline char* set_FileOpen_info(
     // store event time in nanoseconds for comparison
     eventTimeNs = bpf_ktime_get_ns() + config->bootNsSinceEpoch;
 
+#ifdef __NR_open
     if (eventArgs->syscallId == __NR_open) {
         event->m_Flags = (uint32_t)eventArgs->a[1];
     } else {
         event->m_Flags = (uint32_t)eventArgs->a[2];
     }
+#else
+    event->m_Flags = (uint32_t)eventArgs->a[2];
+#endif
 
     ptr = (char *)(event + 1);
     memset(event->m_Extensions, 0, sizeof(event->m_Extensions));
@@ -211,4 +215,3 @@ static inline char* set_FileOpen_info(
         return (char *)eventHdr;
     }
 }
-

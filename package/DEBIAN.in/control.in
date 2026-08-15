@@ -1,8 +1,7 @@
 Package: sysmonforlinux
 Version: @PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@
-Architecture: amd64
+Architecture: @DEB_ARCH@
 Maintainer: Sysinternals <syssite@microsoft.com>
 Description: A system monitor based on eBPF, ported from Windows, that outputs events to Syslog
-Depends: libc6 (>= 2.14), libgcc1 (>= 1:3.0), libstdc++6 (>= 5), libssl-dev, sysinternalsebpf (>= 1.6.0)
+Depends: libc6 (>= 2.14), libgcc-s1 | libgcc1, libstdc++6 (>= 5), sysinternalsebpf (>= 1.6.0)
 Installed-Size: 58934
-

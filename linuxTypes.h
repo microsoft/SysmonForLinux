@@ -25,7 +25,9 @@
 #pragma once
 
 #include <stdbool.h>
+#ifndef EBPF_CO_RE
 #include <stdint.h>
+#endif
 #include <assert.h>
 #include <linux/limits.h>
 #include <ctype.h>
@@ -613,7 +615,6 @@ typedef struct {
     ULONG                   m_ProgId;           // BPF program ID (returned by kernel)
     ULONG                   m_Extensions[LINUX_EBPF_ExtMax];
 } SYSMON_LINUX_EBPF_EVENT, *PSYSMON_LINUX_EBPF_EVENT;
-
 
 
 

@@ -41,9 +41,13 @@ int FileDeleteRawExit(struct bpf_our_raw_tracepoint_args *ctx)
         return 0;
 
     // only handle unlink events
+#ifdef __NR_unlink
     if (eventArgs->syscallId != __NR_unlink) {
         return 0;
     }
+#else
+    return 0;
+#endif
 
     // set the return code
     if (bpf_probe_read(&eventArgs->returnCode, sizeof(int64_t), (void *)&SYSCALL_PT_REGS_RC(regs)) != 0){
@@ -64,4 +68,3 @@ int FileDeleteRawExit(struct bpf_our_raw_tracepoint_args *ctx)
 
     return 0;
 }
-
