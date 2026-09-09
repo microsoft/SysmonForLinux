@@ -80,9 +80,18 @@ execute_process(
     OUTPUT_VARIABLE TARGET_MULTIARCH
     OUTPUT_STRIP_TRAILING_WHITESPACE
     RESULT_VARIABLE TARGET_MULTIARCH_RESULT
+    ERROR_QUIET
 )
-if(NOT TARGET_MULTIARCH_RESULT EQUAL 0 OR NOT TARGET_MULTIARCH)
-    message(FATAL_ERROR "Failed to determine the target multiarch tuple")
+# Debian-based toolchains use a multiarch include directory. Native RPM-based
+# toolchains may return an empty tuple and use /usr/include directly instead.
+# Keep this nonempty because the eBPF compile command passes it to -isystem.
+set(TARGET_MULTIARCH_INCLUDE "/usr/include")
+if(TARGET_MULTIARCH_RESULT EQUAL 0 AND TARGET_MULTIARCH AND
+        IS_DIRECTORY "/usr/include/${TARGET_MULTIARCH}")
+    set(TARGET_MULTIARCH_INCLUDE "/usr/include/${TARGET_MULTIARCH}")
+elseif(CMAKE_CROSSCOMPILING)
+    message(FATAL_ERROR
+        "Failed to determine the target multiarch include directory for cross-compilation")
 endif()
 execute_process(
     COMMAND "${CMAKE_C_COMPILER}" -print-file-name=include
@@ -95,7 +104,6 @@ if(NOT TARGET_COMPILER_INCLUDE_RESULT EQUAL 0 OR
         TARGET_COMPILER_INCLUDE STREQUAL "include")
     message(FATAL_ERROR "Failed to determine the target compiler include directory")
 endif()
-set(TARGET_MULTIARCH_INCLUDE "/usr/include/${TARGET_MULTIARCH}")
 
 set(SYSINTERNALS_EBPF_ROOT "/opt/sysinternalsEBPF" CACHE PATH
     "Path containing the target SysinternalsEBPF eBPF resources")
