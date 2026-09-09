@@ -59,6 +59,66 @@ if ("${PROJECT_VERSION_TWEAK}" STREQUAL "")
   set(PROJECT_VERSION_TWEAK 0)
 endif()
 
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)$")
+    set(SYSMON_TARGET_ARCH "aarch64")
+    set(BPF_TARGET_ARCH "arm64")
+    set(DEB_ARCH "arm64")
+    set(RPM_ARCH "aarch64")
+    set(OPENSSL_TARGET "linux-aarch64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64)$")
+    set(SYSMON_TARGET_ARCH "x86_64")
+    set(BPF_TARGET_ARCH "x86")
+    set(DEB_ARCH "amd64")
+    set(RPM_ARCH "x86_64")
+    set(OPENSSL_TARGET "linux-x86_64")
+else()
+    message(FATAL_ERROR "Unsupported target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+
+execute_process(
+    COMMAND "${CMAKE_C_COMPILER}" -print-multiarch
+    OUTPUT_VARIABLE TARGET_MULTIARCH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    RESULT_VARIABLE TARGET_MULTIARCH_RESULT
+)
+if(NOT TARGET_MULTIARCH_RESULT EQUAL 0 OR NOT TARGET_MULTIARCH)
+    message(FATAL_ERROR "Failed to determine the target multiarch tuple")
+endif()
+execute_process(
+    COMMAND "${CMAKE_C_COMPILER}" -print-file-name=include
+    OUTPUT_VARIABLE TARGET_COMPILER_INCLUDE
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    RESULT_VARIABLE TARGET_COMPILER_INCLUDE_RESULT
+)
+if(NOT TARGET_COMPILER_INCLUDE_RESULT EQUAL 0 OR
+        NOT TARGET_COMPILER_INCLUDE OR
+        TARGET_COMPILER_INCLUDE STREQUAL "include")
+    message(FATAL_ERROR "Failed to determine the target compiler include directory")
+endif()
+set(TARGET_MULTIARCH_INCLUDE "/usr/include/${TARGET_MULTIARCH}")
+
+set(SYSINTERNALS_EBPF_ROOT "/opt/sysinternalsEBPF" CACHE PATH
+    "Path containing the target SysinternalsEBPF eBPF resources")
+set(SYSINTERNALS_EBPF_INCLUDE_DIR "/usr/local/include" CACHE PATH
+    "Path containing the target libsysinternalsEBPF.h")
+set(SYSINTERNALS_EBPF_LIBRARY "" CACHE FILEPATH
+    "Target libsysinternalsEBPF shared library")
+
+if(NOT SYSINTERNALS_EBPF_LIBRARY)
+    find_library(DETECTED_SYSINTERNALS_EBPF_LIBRARY
+        NAMES sysinternalsEBPF
+        PATHS /usr/local/lib /usr/lib
+    )
+    if(NOT DETECTED_SYSINTERNALS_EBPF_LIBRARY)
+        message(FATAL_ERROR
+            "libsysinternalsEBPF was not found; set SYSINTERNALS_EBPF_LIBRARY")
+    endif()
+    set(SYSINTERNALS_EBPF_LIBRARY "${DETECTED_SYSINTERNALS_EBPF_LIBRARY}")
+endif()
+
+set(SYSINTERNALS_EBPF_KERN_DIR "${SYSINTERNALS_EBPF_ROOT}/ebpfKern")
+set(SYSINTERNALS_EBPF_LIBBPF_DIR "${SYSINTERNALS_EBPF_ROOT}/libbpf")
+
 configure_file(linuxVersion.h.in linuxVersion.h)
 configure_file(package/DEBIAN.in/control.in DEBIANcontrol)
 configure_file(package/SPECS.in/spec.in SPECS.spec)
@@ -74,7 +134,7 @@ configure_file(package/SPECS.in/spec.in SPECS.spec)
 #
 set(TEXTTRANSFORM "$ENV{HOME}/.dotnet/tools/t4")
 set(ICONV "/usr/bin/iconv")
-set(LD "/usr/bin/ld")
+set(LD "${CMAKE_LINKER}")
 
 #
 # package name
@@ -138,15 +198,42 @@ add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/${SYSMON_COMPRESS_MAN}
 include(ExternalProject)
 
 
-# Get and build openSSL.
+# Get and build OpenSSL.
 # When you update the GIT tag please make sure to delete the build
 # directory before building again.
+set(OPENSSL_CROSS_COMPILE "" CACHE STRING
+    "OpenSSL cross-compiler prefix, for example aarch64-linux-gnu-")
+
+if(CMAKE_CROSSCOMPILING)
+    if(NOT OPENSSL_CROSS_COMPILE)
+        message(FATAL_ERROR
+            "OPENSSL_CROSS_COMPILE must be set when cross-compiling")
+    endif()
+    set(OPENSSL_CONFIGURE_COMMAND
+        "${CMAKE_COMMAND}" -E env
+        "CROSS_COMPILE=${OPENSSL_CROSS_COMPILE}"
+        <SOURCE_DIR>/Configure "${OPENSSL_TARGET}")
+else()
+    set(OPENSSL_CONFIGURE_COMMAND <SOURCE_DIR>/Configure "${OPENSSL_TARGET}")
+endif()
+
+find_program(OPENSSL_MAKE NAMES gmake make)
+if(NOT OPENSSL_MAKE)
+    message(FATAL_ERROR "GNU Make is required to build OpenSSL")
+endif()
+
 ExternalProject_Add(openssl
                     GIT_REPOSITORY https://github.com/openssl/openssl.git
                     GIT_TAG openssl-3.6.2
                     PREFIX ./openssl
-                    CONFIGURE_COMMAND cd ../openssl && ./Configure
-                    BUILD_COMMAND cd ../openssl && make && rm -rf ${PROJECT_BINARY_DIR}/openssl/src/openssl/cloudflare-quiche && rm -rf ${PROJECT_BINARY_DIR}/openssl/src/openssl/pyca-cryptography
+                    BUILD_IN_SOURCE TRUE
+                    CONFIGURE_COMMAND ${OPENSSL_CONFIGURE_COMMAND}
+                    BUILD_COMMAND "${OPENSSL_MAKE}"
+                    COMMAND "${CMAKE_COMMAND}" -E remove_directory
+                        <SOURCE_DIR>/cloudflare-quiche
+                    COMMAND "${CMAKE_COMMAND}" -E remove_directory
+                        <SOURCE_DIR>/pyca-cryptography
+                    BUILD_BYPRODUCTS <SOURCE_DIR>/libcrypto.a
                     INSTALL_COMMAND ""
                     UPDATE_COMMAND ""
                    )
@@ -214,23 +301,39 @@ target_include_directories(sysmon PUBLIC
                            "${SYSMON_COMMON_SOURCE_DIR}"
                            "${PROJECT_BINARY_DIR}"
                            "/usr/include"
-                           "/usr/local/include"
+                           "${TARGET_MULTIARCH_INCLUDE}"
+                           "${SYSINTERNALS_EBPF_INCLUDE_DIR}"
                            "${PUGIXML_SOURCE_DIR}"
-                           "/opt/sysinternalsEBPF/ebpfKern"
+                           "${SYSINTERNALS_EBPF_KERN_DIR}"
+                           "${openssl_SOURCE_DIR}/include"
                           )
 
 
 add_custom_target(deb
-    COMMAND "${CMAKE_SOURCE_DIR}/makePackages.sh" "${CMAKE_SOURCE_DIR}" "${PROJECT_BINARY_DIR}" "${PACKAGE_NAME}" "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}" "0" "deb"
+    COMMAND "${CMAKE_SOURCE_DIR}/makePackages.sh" "${CMAKE_SOURCE_DIR}" "${PROJECT_BINARY_DIR}" "${PACKAGE_NAME}" "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}" "0" "deb" "${DEB_ARCH}" "${RPM_ARCH}"
     DEPENDS "${CMAKE_SOURCE_DIR}/package" "${PROJECT_BINARY_DIR}/sysmon"
 )
 
 add_custom_target(rpm
-    COMMAND "${CMAKE_SOURCE_DIR}/makePackages.sh" "${CMAKE_SOURCE_DIR}" "${PROJECT_BINARY_DIR}" "${PACKAGE_NAME}" "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}" "0" "rpm"
+    COMMAND "${CMAKE_SOURCE_DIR}/makePackages.sh" "${CMAKE_SOURCE_DIR}" "${PROJECT_BINARY_DIR}" "${PACKAGE_NAME}" "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}" "0" "rpm" "${DEB_ARCH}" "${RPM_ARCH}"
     DEPENDS "${CMAKE_SOURCE_DIR}/package" "${PROJECT_BINARY_DIR}/sysmon"
 )
 
 add_dependencies(sysmon openssl)
+
+set(SYSMON_HOST_CHECK_EBPF_SIZES "" CACHE FILEPATH
+    "Native checkEBPFsizes executable to use while cross-compiling")
+if(CMAKE_CROSSCOMPILING)
+    if(NOT EXISTS "${SYSMON_HOST_CHECK_EBPF_SIZES}")
+        message(FATAL_ERROR
+            "Set SYSMON_HOST_CHECK_EBPF_SIZES to a native executable")
+    endif()
+    set(CHECK_EBPF_SIZES "${SYSMON_HOST_CHECK_EBPF_SIZES}")
+    set(CHECK_EBPF_SIZES_DEPENDS "${SYSMON_HOST_CHECK_EBPF_SIZES}")
+else()
+    set(CHECK_EBPF_SIZES "$<TARGET_FILE:checkEBPFsizes>")
+    set(CHECK_EBPF_SIZES_DEPENDS checkEBPFsizes)
+endif()
 
 # list of ebpf programs to make
 set(EBPF_PROGS
@@ -243,75 +346,75 @@ set(EBPF_PROGS
 )
 
 add_custom_command(OUTPUT sysmonEBPFkern4.15.rep
-                   COMMAND "${CMAKE_BINARY_DIR}/checkEBPFsizes" sysmonEBPFkern4.15.o 4096 && touch sysmonEBPFkern4.15.rep
+                   COMMAND "${CHECK_EBPF_SIZES}" sysmonEBPFkern4.15.o 4096 && touch sysmonEBPFkern4.15.rep
                    COMMENT "Checking sysmonEBPFkern4.15.o"
-                   DEPENDS checkEBPFsizes sysmonEBPFkern4.15.o
+                   DEPENDS ${CHECK_EBPF_SIZES_DEPENDS} sysmonEBPFkern4.15.o
                   )
 
 add_custom_command(OUTPUT sysmonEBPFkern4.16.rep
-                   COMMAND "${CMAKE_BINARY_DIR}/checkEBPFsizes" sysmonEBPFkern4.16.o 4096 && touch sysmonEBPFkern4.16.rep
+                   COMMAND "${CHECK_EBPF_SIZES}" sysmonEBPFkern4.16.o 4096 && touch sysmonEBPFkern4.16.rep
                    COMMENT "Checking sysmonEBPFkern4.16.o"
-                   DEPENDS checkEBPFsizes sysmonEBPFkern4.16.o
+                   DEPENDS ${CHECK_EBPF_SIZES_DEPENDS} sysmonEBPFkern4.16.o
                  )
 
 add_custom_command(OUTPUT sysmonEBPFkern4.17-5.1.rep
-                   COMMAND "${CMAKE_BINARY_DIR}/checkEBPFsizes" sysmonEBPFkern4.17-5.1.o 4096 && touch sysmonEBPFkern4.17-5.1.rep
+                   COMMAND "${CHECK_EBPF_SIZES}" sysmonEBPFkern4.17-5.1.o 4096 && touch sysmonEBPFkern4.17-5.1.rep
                    COMMENT "Checking sysmonEBPFkern4.17-5.1.o"
-                   DEPENDS checkEBPFsizes sysmonEBPFkern4.17-5.1.o
+                   DEPENDS ${CHECK_EBPF_SIZES_DEPENDS} sysmonEBPFkern4.17-5.1.o
                   )
 
 add_custom_command(OUTPUT sysmonEBPFkern5.2.rep
-                   COMMAND "${CMAKE_BINARY_DIR}/checkEBPFsizes" sysmonEBPFkern5.2.o 32768 && touch sysmonEBPFkern5.2.rep
+                   COMMAND "${CHECK_EBPF_SIZES}" sysmonEBPFkern5.2.o 32768 && touch sysmonEBPFkern5.2.rep
                    COMMENT "Checking sysmonEBPFkern5.2.o"
-                   DEPENDS checkEBPFsizes sysmonEBPFkern5.2.o
+                   DEPENDS ${CHECK_EBPF_SIZES_DEPENDS} sysmonEBPFkern5.2.o
                   )
 
 add_custom_command(OUTPUT sysmonEBPFkern5.3-5.5.rep
-                   COMMAND "${CMAKE_BINARY_DIR}/checkEBPFsizes" sysmonEBPFkern5.3-5.5.o 32768 && touch sysmonEBPFkern5.3-5.5.rep
+                   COMMAND "${CHECK_EBPF_SIZES}" sysmonEBPFkern5.3-5.5.o 32768 && touch sysmonEBPFkern5.3-5.5.rep
                    COMMENT "Checking sysmonEBPFkern5.3-5.5.o"
-                   DEPENDS checkEBPFsizes sysmonEBPFkern5.3-5.5.o
+                   DEPENDS ${CHECK_EBPF_SIZES_DEPENDS} sysmonEBPFkern5.3-5.5.o
                   )
 
 add_custom_command(OUTPUT sysmonEBPFkern5.6-.rep
-                   COMMAND "${CMAKE_BINARY_DIR}/checkEBPFsizes" sysmonEBPFkern5.6-.o 32768 && touch sysmonEBPFkern5.6-.rep
+                   COMMAND "${CHECK_EBPF_SIZES}" sysmonEBPFkern5.6-.o 32768 && touch sysmonEBPFkern5.6-.rep
                    COMMENT "Checking sysmonEBPFkern5.6-.o"
-                   DEPENDS checkEBPFsizes sysmonEBPFkern5.6-.o
+                   DEPENDS ${CHECK_EBPF_SIZES_DEPENDS} sysmonEBPFkern5.6-.o
                   )
 
 add_custom_command(OUTPUT sysmonEBPFkern4.15_core.rep
-                   COMMAND "${CMAKE_BINARY_DIR}/checkEBPFsizes" sysmonEBPFkern4.15_core.o 4096 touch sysmonEBPFkern4.15_core.rep
+                   COMMAND "${CHECK_EBPF_SIZES}" sysmonEBPFkern4.15_core.o 4096 && touch sysmonEBPFkern4.15_core.rep
                    COMMENT "Checking sysmonEBPFkern4.15_core.o"
-                   DEPENDS checkEBPFsizes sysmonEBPFkern4.15_core.o
+                   DEPENDS ${CHECK_EBPF_SIZES_DEPENDS} sysmonEBPFkern4.15_core.o
                   )
 
 add_custom_command(OUTPUT sysmonEBPFkern4.16_core.rep
-                   COMMAND "${CMAKE_BINARY_DIR}/checkEBPFsizes" sysmonEBPFkern4.16_core.o 4096 && touch sysmonEBPFkern4.16_core.rep
+                   COMMAND "${CHECK_EBPF_SIZES}" sysmonEBPFkern4.16_core.o 4096 && touch sysmonEBPFkern4.16_core.rep
                    COMMENT "Checking sysmonEBPFkern4.16_core.o"
-                   DEPENDS checkEBPFsizes sysmonEBPFkern4.16_core.o
+                   DEPENDS ${CHECK_EBPF_SIZES_DEPENDS} sysmonEBPFkern4.16_core.o
                   )
 
 add_custom_command(OUTPUT sysmonEBPFkern4.17-5.1_core.rep
-                   COMMAND "${CMAKE_BINARY_DIR}/checkEBPFsizes" sysmonEBPFkern4.17-5.1_core.o 4096 && touch sysmonEBPFkern4.17-5.1_core.rep
+                   COMMAND "${CHECK_EBPF_SIZES}" sysmonEBPFkern4.17-5.1_core.o 4096 && touch sysmonEBPFkern4.17-5.1_core.rep
                    COMMENT "Checking sysmonEBPFkern4.17-5.1_core.o"
-                   DEPENDS checkEBPFsizes sysmonEBPFkern4.17-5.1_core.o
+                   DEPENDS ${CHECK_EBPF_SIZES_DEPENDS} sysmonEBPFkern4.17-5.1_core.o
                   )
 
 add_custom_command(OUTPUT sysmonEBPFkern5.2_core.rep
-                   COMMAND "${CMAKE_BINARY_DIR}/checkEBPFsizes" sysmonEBPFkern5.2_core.o 32768 && touch sysmonEBPFkern5.2_core.rep
+                   COMMAND "${CHECK_EBPF_SIZES}" sysmonEBPFkern5.2_core.o 32768 && touch sysmonEBPFkern5.2_core.rep
                    COMMENT "Checking sysmonEBPFkern5.2_core.o"
-                   DEPENDS checkEBPFsizes sysmonEBPFkern5.2_core.o
+                   DEPENDS ${CHECK_EBPF_SIZES_DEPENDS} sysmonEBPFkern5.2_core.o
                   )
 
 add_custom_command(OUTPUT sysmonEBPFkern5.3-5.5_core.rep
-                   COMMAND "${CMAKE_BINARY_DIR}/checkEBPFsizes" sysmonEBPFkern5.3-5.5_core.o 32768 && touch sysmonEBPFkern5.3-5.5_core.rep
+                   COMMAND "${CHECK_EBPF_SIZES}" sysmonEBPFkern5.3-5.5_core.o 32768 && touch sysmonEBPFkern5.3-5.5_core.rep
                    COMMENT "Checking sysmonEBPFkern5.3-5.5_core.o"
-                   DEPENDS checkEBPFsizes sysmonEBPFkern5.3-5.5_core.o
+                   DEPENDS ${CHECK_EBPF_SIZES_DEPENDS} sysmonEBPFkern5.3-5.5_core.o
                   )
 
 add_custom_command(OUTPUT sysmonEBPFkern5.6-_core.rep
-                   COMMAND "${CMAKE_BINARY_DIR}/checkEBPFsizes" sysmonEBPFkern5.6-_core.o 32768 && touch sysmonEBPFkern5.6-_core.rep
+                   COMMAND "${CHECK_EBPF_SIZES}" sysmonEBPFkern5.6-_core.o 32768 && touch sysmonEBPFkern5.6-_core.rep
                    COMMENT "Checking sysmonEBPFkern5.6-_core.o"
-                   DEPENDS checkEBPFsizes sysmonEBPFkern5.6-_core.o
+                   DEPENDS ${CHECK_EBPF_SIZES_DEPENDS} sysmonEBPFkern5.6-_core.o
                   )
 
 # list of files the EBPF programs depend upon
@@ -319,10 +422,10 @@ set(EBPF_DEPENDS
                sysmon_defs.h
                linuxTypes.h
                "${SYSMON_COMMON_SOURCE_DIR}/ioctlcmd.h"
-               /opt/sysinternalsEBPF/ebpfKern/sysinternalsEBPF_helpers.c
-               /opt/sysinternalsEBPF/ebpfKern/sysinternalsEBPF_common.h
-               /opt/sysinternalsEBPF/ebpfKern/sysinternalsEBPFoffsets.h
-               /opt/sysinternalsEBPF/ebpfKern/sysinternalsEBPFshared.h
+               "${SYSINTERNALS_EBPF_KERN_DIR}/sysinternalsEBPF_helpers.c"
+               "${SYSINTERNALS_EBPF_KERN_DIR}/sysinternalsEBPF_common.h"
+               "${SYSINTERNALS_EBPF_KERN_DIR}/sysinternalsEBPFoffsets.h"
+               "${SYSINTERNALS_EBPF_KERN_DIR}/sysinternalsEBPFshared.h"
                ebpfKern/sysmonEBPF_common.h
                ebpfKern/sysmonGenericEntry_tp.c
                ebpfKern/sysmonGenericEntry_rawtp.c
@@ -372,7 +475,7 @@ set(EBPF_DEPENDS
 #
 # link sysmon
 #
-target_link_libraries(sysmon sysinternalsEBPF pthread ${openssl_SOURCE_DIR}/libcrypto.a ${CMAKE_DL_LIBS} )
+target_link_libraries(sysmon "${SYSINTERNALS_EBPF_LIBRARY}" pthread ${openssl_SOURCE_DIR}/libcrypto.a ${CMAKE_DL_LIBS} )
 
 
 #
@@ -393,6 +496,7 @@ target_include_directories(sysmonLogView PUBLIC
                            "${SYSMON_COMMON_SOURCE_DIR}"
                            "${PROJECT_BINARY_DIR}"
                            "/usr/include"
+                           "${TARGET_MULTIARCH_INCLUDE}"
                            "${PUGIXML_SOURCE_DIR}"
                            )
 
@@ -408,9 +512,11 @@ add_executable(checkEBPFsizes
 
 target_include_directories(checkEBPFsizes PUBLIC
                            "/usr/include"
+                           "${TARGET_MULTIARCH_INCLUDE}"
+                           "${SYSINTERNALS_EBPF_INCLUDE_DIR}"
                            )
 
-target_link_libraries(checkEBPFsizes sysinternalsEBPF)
+target_link_libraries(checkEBPFsizes "${SYSINTERNALS_EBPF_LIBRARY}")
 
 #
 # GTest required for unit tests
@@ -445,14 +551,17 @@ add_executable(sysmonUnitTests
                )
 
 target_link_libraries(sysmonUnitTests ${GTEST_LIBRARIES} pthread ${openssl_SOURCE_DIR}/libcrypto.a ${CMAKE_DL_LIBS})
+add_dependencies(sysmonUnitTests openssl)
 target_include_directories(sysmonUnitTests PUBLIC
                            "${CMAKE_SOURCE_DIR}"
                            "${SYSMON_COMMON_SOURCE_DIR}"
                            "${SYSMON_TESTS_SOURCE_DIR}"
                            "${PROJECT_BINARY_DIR}"
                            "/usr/include"
+                           "${TARGET_MULTIARCH_INCLUDE}"
                            "${PUGIXML_SOURCE_DIR}"
                            "${GTEST_INCLUDE_DIRS}"
+                           "${openssl_SOURCE_DIR}/include"
                            )
 
 #
@@ -603,7 +712,10 @@ endif()
 file(WRITE "${PROJECT_BINARY_DIR}/previous_cmake_file_hash.txt" "${CMAKE_FILE_HASH}")
 
 # set binaries and options for clang and llc
-set(CLANG "clang")
+find_program(CLANG clang)
+if(NOT CLANG)
+    message(FATAL_ERROR "clang is required to build eBPF programs")
+endif()
 set(LLC "llc")
 set(CLANG_OPTIONS -Wno-unused-value
                   -Wno-pointer-sign
@@ -616,7 +728,7 @@ set(CLANG_OPTIONS -Wno-unused-value
                   )
 set(CLANG_DEFINES -D __KERNEL__
                   -D __BPF_TRACING__
-                  -D __TARGET_ARCH_x86
+                  -D "__TARGET_ARCH_${BPF_TARGET_ARCH}"
                   -D __linux__
                   )
 if (DEBUG_K)
@@ -628,10 +740,9 @@ set(CLANG_INCLUDES
                    -I "${CMAKE_SOURCE_DIR}/gnu"
                    -I "${CMAKE_SOURCE_DIR}"
                    -I "${SYSMON_COMMON_SOURCE_DIR}"
-                   -I "/opt/sysinternalsEBPF/ebpfKern"
-                   -I "/opt/sysinternalsEBPF/libbpf"
+                   -I "${SYSINTERNALS_EBPF_KERN_DIR}"
+                   -I "${SYSINTERNALS_EBPF_LIBBPF_DIR}"
                    -I "${CMAKE_BINARY_DIR}"
-                   -I "${libbpf_SOURCE_DIR}/src"
                    )
 
 set(EBPF_CORE_PROG_SUFFIX "_core")
@@ -645,7 +756,14 @@ set(EBPF_CORE_PROG_SUFFIX "_core")
 # function to make ebpf programs
 function(build_ebpf ebpfsrc suffix)
     add_custom_command(OUTPUT ${ebpfsrc}${suffix}.o
-                       COMMAND "${CLANG}" -nostdinc ${CLANG_INCLUDES} -isystem "/usr/include" -isystem "/usr/include/x86_64-linux-gnu" -isystem `gcc -print-file-name=include` ${CLANG_DEFINES} -O2 ${CLANG_OPTIONS} -target bpf -fno-stack-protector -c "${CMAKE_SOURCE_DIR}/ebpfKern/${ebpfsrc}.c" -o "${ebpfsrc}${suffix}.o"
+                       COMMAND "${CLANG}" -nostdinc ${CLANG_INCLUDES}
+                           -isystem "${TARGET_MULTIARCH_INCLUDE}"
+                           -isystem "/usr/include"
+                           -isystem "${TARGET_COMPILER_INCLUDE}"
+                           ${CLANG_DEFINES} -O2 ${CLANG_OPTIONS}
+                           -target bpf -fno-stack-protector
+                           -c "${CMAKE_SOURCE_DIR}/ebpfKern/${ebpfsrc}.c"
+                           -o "${ebpfsrc}${suffix}.o"
                        COMMENT "Building EBPF object ${ebpfsrc}${suffix}.o"
                        DEPENDS ebpfKern/${ebpfsrc}.c ${EBPF_DEPENDS}
                        )

@@ -28,8 +28,6 @@
 //
 //====================================================================
 
-#include <inttypes.h>
-
 __attribute__((always_inline))
 static inline char* set_process_ext(
     PSYSMON_PROCESS_CREATE event,
@@ -191,4 +189,3 @@ static inline char* set_ProcCreate_info(
 
     return set_process_ext(event, config, task);
 }
-

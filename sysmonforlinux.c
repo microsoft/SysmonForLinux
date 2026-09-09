@@ -101,10 +101,16 @@ const ebpfSyscallTPprog         TPenterProgs[] =
 const ebpfSyscallTPprog         TPexitProgs[] =
 {   {__NR_execve, "ProcCreateExit"},
     {__NR_execveat, "ProcCreateExit"},
+#ifdef __NR_creat
     {__NR_creat, "FileCreateExit"},
+#endif
+#ifdef __NR_open
     {__NR_open, "FileOpenExit"},
+#endif
     {__NR_openat, "FileOpenExit"},
+#ifdef __NR_unlink
     {__NR_unlink, "FileDeleteExit"},
+#endif
     {__NR_unlinkat, "FileDeleteAtExit"},
     {__NR_unlinkat, "FileDeleteAtCwdExit"},
     {__NR_accept, "TCPacceptExit"},
@@ -127,12 +133,18 @@ const ebpfSyscallRTPprog        RTPexitProgs[] =
 {
     {"ProcCreateRawExit", __NR_execve},
     {"ProcCreateRawExit", __NR_execveat},
+#ifdef __NR_creat
     {"FileCreateRawExit", __NR_creat},
+#endif
+#ifdef __NR_open
     {"FileOpenRawExit", __NR_open},
+#endif
     {"FileOpenRawExit", __NR_openat},
     {"FileOpenRawExit", __NR_RAWACCESS},
     {"FileOpenRawExit", __NR_CREATE},
+#ifdef __NR_unlink
     {"FileDeleteRawExit", __NR_unlink},
+#endif
     {"FileDeleteAtRawExit", __NR_unlinkat},
     {"FileDeleteAtCwdRawExit", __NR_unlinkat},
     {"TCPacceptRawExit", __NR_accept},
@@ -906,18 +918,26 @@ void SetSyscallActive(bool *s, ULONG eventId)
             s[__NR_PROCTERM] = true;
             break;
         case SYSMONEVENT_RAWACCESS_READ_EVENT_value:
+#ifdef __NR_open
             s[__NR_open] = true;
+#endif
             s[__NR_openat] = true;
             s[__NR_RAWACCESS] = true;
             break;
         case SYSMONEVENT_FILE_CREATE_EVENT_value:
+#ifdef __NR_open
             s[__NR_open] = true;
+#endif
             s[__NR_openat] = true;
+#ifdef __NR_creat
             s[__NR_creat] = true;
+#endif
             s[__NR_CREATE] = true;
             break;
         case SYSMONEVENT_FILE_DELETE_EVENT_value:
+#ifdef __NR_unlink
             s[__NR_unlink] = true;
+#endif
             s[__NR_unlinkat] = true;
             break;
         case SYSMONEVENT_ACCESS_PROCESS_EVENT_value:
@@ -1725,4 +1745,3 @@ main(
     Usage( argv[0], &csbi );
     return ERROR_INVALID_PARAMETER;
 }
-

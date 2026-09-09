@@ -42,9 +42,13 @@ int FileCreateRawExit(struct bpf_our_raw_tracepoint_args *ctx)
     }
 
     // only handle file creation events
+#ifdef __NR_creat
     if (eventArgs->syscallId != __NR_creat) {
         return 0;
     }
+#else
+    return 0;
+#endif
 
     // set the return code
     if (bpf_probe_read(&eventArgs->returnCode, sizeof(int64_t), (void *)&SYSCALL_PT_REGS_RC(regs)) != 0){
@@ -66,4 +70,3 @@ int FileCreateRawExit(struct bpf_our_raw_tracepoint_args *ctx)
 
     return 0;
 }
-

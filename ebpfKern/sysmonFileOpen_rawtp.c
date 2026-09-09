@@ -41,7 +41,11 @@ int FileOpenRawExit(struct bpf_our_raw_tracepoint_args *ctx)
         return 0;
 
     // only handle open and openat events
+#ifdef __NR_open
     if (eventArgs->syscallId != __NR_open && eventArgs->syscallId != __NR_openat) {
+#else
+    if (eventArgs->syscallId != __NR_openat) {
+#endif
         return 0;
     }
 
@@ -64,4 +68,3 @@ int FileOpenRawExit(struct bpf_our_raw_tracepoint_args *ctx)
 
     return 0;
 }
-

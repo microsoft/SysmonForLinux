@@ -78,6 +78,51 @@ cmake ..
 make
 ```
 
+## Cross-build for aarch64 on Ubuntu
+
+First cross-build and stage SysinternalsEBPF as described in its `BUILD.md`.
+The commands below assume its staged installation is in
+`../SysinternalsEBPF/build-arm64/staging`.
+
+Install the cross compiler and target development libraries:
+
+```shell
+sudo dpkg --add-architecture arm64
+sudo apt update
+sudo apt install crossbuild-essential-arm64 binutils-aarch64-linux-gnu \
+    libc6-dev-arm64-cross linux-libc-dev-arm64-cross \
+    libelf-dev:arm64 zlib1g-dev:arm64 libzstd-dev:arm64 \
+    libjson-glib-dev:arm64 libgtest-dev:arm64 libgmock-dev:arm64
+```
+
+Build the eBPF size checker for the build host. It inspects architecture-neutral
+eBPF objects during the cross-build and avoids executing aarch64 programs on
+the build host:
+
+```shell
+cmake -S . -B build-host
+cmake --build build-host --target checkEBPFsizes
+```
+
+Configure and build the aarch64 targets:
+
+```shell
+EBPF_STAGE="$(realpath ../SysinternalsEBPF/build-arm64/staging)"
+
+cmake -S . -B build-arm64 \
+    -DCMAKE_TOOLCHAIN_FILE=cmake/aarch64-linux-gnu.cmake \
+    -DOPENSSL_CROSS_COMPILE=aarch64-linux-gnu- \
+    -DSYSINTERNALS_EBPF_ROOT="$EBPF_STAGE/opt/sysinternalsEBPF" \
+    -DSYSINTERNALS_EBPF_INCLUDE_DIR="$EBPF_STAGE/usr/local/include" \
+    -DSYSINTERNALS_EBPF_LIBRARY="$EBPF_STAGE/usr/local/lib/libsysinternalsEBPF.so" \
+    -DSYSMON_HOST_CHECK_EBPF_SIZES="$PWD/build-host/checkEBPFsizes"
+cmake --build build-arm64 --parallel
+```
+
+The resulting `sysmon`, `sysmonLogView`, `sysmonUnitTests`, and
+`checkEBPFsizes` executables target aarch64. Run those executables and all
+runtime tests on an aarch64 Linux host; QEMU is not required.
+
 ## Test
 ```
 ./sysmonUnitTests

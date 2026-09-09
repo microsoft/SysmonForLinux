@@ -49,10 +49,12 @@
 #endif
 
 #include <sysinternalsEBPF_common.h>
+#ifndef EBPF_CO_RE
 #include <stdint.h>
+#endif
 #include <bpf_helpers.h>
 #include <bpf_core_read.h>
-#include <asm/unistd_64.h>
+#include <asm/unistd.h>
 #include <sysinternalsEBPFshared.h>
 #include "sysmon_defs.h"
 

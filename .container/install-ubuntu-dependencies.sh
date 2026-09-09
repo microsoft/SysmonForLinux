@@ -23,7 +23,6 @@ sudo apt-get install -y --no-install-recommends \
         clang \
         libzstd1 \
         libgtest-dev \
-        libc6-dev-i386 \
         apt-transport-https \
         dirmngr \
         googletest \
