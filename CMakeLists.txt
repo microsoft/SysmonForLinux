@@ -217,13 +217,23 @@ else()
     set(OPENSSL_CONFIGURE_COMMAND <SOURCE_DIR>/Configure "${OPENSSL_TARGET}")
 endif()
 
+find_program(OPENSSL_MAKE NAMES gmake make)
+if(NOT OPENSSL_MAKE)
+    message(FATAL_ERROR "GNU Make is required to build OpenSSL")
+endif()
+
 ExternalProject_Add(openssl
                     GIT_REPOSITORY https://github.com/openssl/openssl.git
                     GIT_TAG openssl-3.6.2
                     PREFIX ./openssl
                     BUILD_IN_SOURCE TRUE
                     CONFIGURE_COMMAND ${OPENSSL_CONFIGURE_COMMAND}
-                    BUILD_COMMAND "${CMAKE_MAKE_PROGRAM}"
+                    BUILD_COMMAND "${OPENSSL_MAKE}"
+                    COMMAND "${CMAKE_COMMAND}" -E remove_directory
+                        <SOURCE_DIR>/cloudflare-quiche
+                    COMMAND "${CMAKE_COMMAND}" -E remove_directory
+                        <SOURCE_DIR>/pyca-cryptography
+                    BUILD_BYPRODUCTS <SOURCE_DIR>/libcrypto.a
                     INSTALL_COMMAND ""
                     UPDATE_COMMAND ""
                    )
